@@ -1,0 +1,5 @@
+[
+  {"user": "U001", "text": "We need to decide on the auth provider this week", "ts": "1710500000.000"},
+  {"user": "U002", "text": "I've evaluated Auth0, Clerk, and Firebase Auth. Clerk wins on DX and pricing.", "ts": "1710500060.000"},
+  {"user": "U001", "text": "Let's go with Clerk then. I'll create the migration ticket.", "ts": "1710500120.000"}
+]

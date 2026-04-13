@@ -1,0 +1,42 @@
+{
+  "clear_format_version": "1.0",
+  "source": "test-fixture",
+  "exported_at": "2026-04-12T10:00:00Z",
+  "memories": [
+    {
+      "date": "2026-03-15",
+      "author": "Sarah Chen",
+      "type": "decision",
+      "content": "Team decided to migrate auth from Auth0 to Clerk based on pricing and DX.",
+      "tags": {
+        "team": "platform",
+        "repo": "auth-service",
+        "project": "q1-migration",
+        "domain": "security/auth"
+      },
+      "metadata": {
+        "source_ticket": "AUTH-234",
+        "participants": ["Sarah Chen", "Kai Rivera", "Priya Sharma"]
+      }
+    },
+    {
+      "date": "2026-03-20",
+      "author": "Kai Rivera",
+      "content": "Completed the database migration from MySQL to PostgreSQL. All data verified.",
+      "tags": {
+        "team": "platform",
+        "repo": "api-gateway",
+        "domain": "infrastructure"
+      }
+    },
+    {
+      "date": "2026-04-01",
+      "author": "Priya Sharma",
+      "content": "Frontend performance optimization: added React.memo to heavy components, reduced re-renders by 60%.",
+      "tags": {
+        "team": "frontend",
+        "project": "q1-migration"
+      }
+    }
+  ]
+}

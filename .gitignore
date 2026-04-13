@@ -1,0 +1,23 @@
+# Build artifacts
+/target/
+
+# Model caches (downloaded at runtime, ~600MB+)
+.fastembed_cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Clear Memory data directory (user data, not source)
+.clearmemory/
+
+# Environment files
+.env
+.env.local

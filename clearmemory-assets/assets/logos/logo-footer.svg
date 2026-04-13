@@ -1,0 +1,26 @@
+<svg width="280" height="50" viewBox="0 0 280 50" xmlns="http://www.w3.org/2000/svg">
+  <rect x="2" y="5" width="30" height="30" rx="7" fill="#5B4FC4"/>
+  <!-- Cross beacon -->
+  <circle cx="17" cy="12" r="2.5" fill="#5DCAA5"/>
+  <circle cx="17" cy="12" r="1.2" fill="#fff"/>
+  <line x1="17" y1="8" x2="17" y2="9.5" stroke="#5DCAA5" stroke-width="0.8" stroke-linecap="round"/>
+  <line x1="17" y1="14.5" x2="17" y2="15.5" stroke="#5DCAA5" stroke-width="0.8" stroke-linecap="round"/>
+  <line x1="13" y1="12" x2="14.5" y2="12" stroke="#5DCAA5" stroke-width="0.8" stroke-linecap="round"/>
+  <line x1="19.5" y1="12" x2="21" y2="12" stroke="#5DCAA5" stroke-width="0.8" stroke-linecap="round"/>
+  <!-- Data rows -->
+  <rect x="7" y="17" width="20" height="2.5" rx="0.8" fill="#fff" opacity="0.85"/>
+  <rect x="7" y="21" width="9" height="2" rx="0.6" fill="#fff" opacity="0.6"/>
+  <rect x="18" y="21" width="9" height="2" rx="0.6" fill="#fff" opacity="0.6"/>
+  <rect x="7" y="24.5" width="4" height="1.8" rx="0.5" fill="#fff" opacity="0.4"/>
+  <rect x="12.5" y="24.5" width="4" height="1.8" rx="0.5" fill="#fff" opacity="0.4"/>
+  <rect x="18" y="24.5" width="4" height="1.8" rx="0.5" fill="#fff" opacity="0.4"/>
+  <rect x="23.5" y="24.5" width="4" height="1.8" rx="0.5" fill="#fff" opacity="0.4"/>
+  <rect x="7" y="28" width="4" height="1.5" rx="0.5" fill="#fff" opacity="0.2"/>
+  <rect x="12.5" y="28" width="4" height="1.5" rx="0.5" fill="#fff" opacity="0.2"/>
+  <rect x="18" y="28" width="4" height="1.5" rx="0.5" fill="#fff" opacity="0.2"/>
+  <rect x="23.5" y="28" width="4" height="1.5" rx="0.5" fill="#fff" opacity="0.2"/>
+  <!-- Wordmark -->
+  <text x="40" y="24" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="600" fill="#1a1a1a">Clear<tspan fill="#7F77DD">Memory</tspan><tspan fill="#1D9E75">AI</tspan></text>
+  <!-- Motto -->
+  <text x="40" y="40" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="9" font-weight="400" fill="#888" letter-spacing="1.2">Total recall. Zero confusion.</text>
+</svg>

@@ -1,0 +1,102 @@
+[package]
+name = "clearmemory"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "A high-performance, local-first AI memory engine"
+license = "MIT"
+repository = "https://github.com/greenpioneersolutions/clearmemory"
+
+[[bin]]
+name = "clearmemory"
+path = "src/main.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# HTTP server
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# SQLite with SQLCipher encryption
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher", "backup"] }
+
+# Dates
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Logging & tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+
+# Crypto
+aes-gcm = "0.10"
+argon2 = "0.5"
+sha2 = "0.10"
+rand = "0.8"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+
+# UUID
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Regex (secret scanning)
+regex = "1"
+
+# Directory paths
+dirs = "6"
+
+# Rate limiting
+governor = "0.8"
+
+# Passphrase input
+rpassword = "7"
+
+# CSV parsing
+csv = "1"
+
+# Excel parsing
+calamine = "0.26"
+
+# Embedding & vector search
+fastembed = "5"
+lancedb = "0.27"
+arrow-array = "57"
+arrow-schema = "57"
+
+# HTTP client (model downloads)
+reqwest = { version = "0.12", features = ["json"] }
+
+# OpenTelemetry
+opentelemetry = "0.27"
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.27", features = ["tonic"] }
+tracing-opentelemetry = "0.28"
+
+[dev-dependencies]
+tempfile = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio-test = "0.4"
+
+[[bench]]
+name = "retrieval_bench"
+harness = false
+path = "benchmarks/retrieval_bench.rs"
+
+[[bench]]
+name = "latency_bench"
+harness = false
+path = "benchmarks/latency_bench.rs"

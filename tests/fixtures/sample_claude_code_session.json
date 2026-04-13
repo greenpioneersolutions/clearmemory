@@ -1,0 +1,6 @@
+[
+  {"role": "user", "content": "Help me fix the authentication middleware — it's not properly validating JWT tokens"},
+  {"role": "assistant", "content": "I can see the issue. The middleware is checking the token signature but not validating the expiration claim. Let me fix that."},
+  {"role": "user", "content": "That fixed it. Can you also add rate limiting to the auth endpoints?"},
+  {"role": "assistant", "content": "I've added a token bucket rate limiter with 10 requests per minute per IP for the auth endpoints."}
+]

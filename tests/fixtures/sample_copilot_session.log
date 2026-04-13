@@ -1,0 +1,4 @@
+User: Fix the database connection pool exhaustion issue
+Copilot: The connection pool is set to max 5 connections but your load requires at least 20. I've updated the pool configuration.
+User: Also add connection timeout handling
+Copilot: Added a 30-second connection timeout with exponential backoff retry logic.

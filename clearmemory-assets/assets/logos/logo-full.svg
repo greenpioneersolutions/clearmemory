@@ -1,0 +1,168 @@
+<svg width="100%" viewBox="0 0 680 580" xmlns="http://www.w3.org/2000/svg">
+<rect x="90" y="10" width="500" height="500" rx="64" fill="#5B4FC4"/>
+
+<circle cx="340" cy="78" r="18" fill="#1D9E75" opacity="0.2"/>
+<circle cx="340" cy="78" r="10" fill="#5DCAA5"/>
+<circle cx="340" cy="78" r="5" fill="#fff"/>
+<line x1="340" y1="56" x2="340" y2="64" stroke="#5DCAA5" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="340" y1="92" x2="340" y2="100" stroke="#5DCAA5" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="318" y1="78" x2="326" y2="78" stroke="#5DCAA5" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="354" y1="78" x2="362" y2="78" stroke="#5DCAA5" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="326" y1="64" x2="330" y2="68" stroke="#9FE1CB" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+<line x1="354" y1="92" x2="350" y2="88" stroke="#9FE1CB" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+<line x1="326" y1="92" x2="330" y2="88" stroke="#9FE1CB" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+<line x1="354" y1="64" x2="350" y2="68" stroke="#9FE1CB" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+<path d="M340 100 L340 118" fill="none" stroke="#5DCAA5" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+
+<!-- TIER 1: single wide bar -->
+<rect x="160" y="118" width="360" height="32" rx="6" fill="#fff" opacity="0.95"/>
+<rect x="170" y="124" width="45" height="20" rx="3" fill="#5DCAA5" opacity="0.85"/>
+<rect x="221" y="124" width="30" height="20" rx="3" fill="#7F77DD" opacity="0.75"/>
+<rect x="257" y="124" width="55" height="20" rx="3" fill="#5DCAA5" opacity="0.7"/>
+<rect x="318" y="124" width="24" height="20" rx="3" fill="#7F77DD" opacity="0.65"/>
+<rect x="348" y="124" width="40" height="20" rx="3" fill="#5DCAA5" opacity="0.75"/>
+<rect x="394" y="124" width="50" height="20" rx="3" fill="#7F77DD" opacity="0.7"/>
+<rect x="450" y="124" width="32" height="20" rx="3" fill="#5DCAA5" opacity="0.65"/>
+<rect x="488" y="124" width="24" height="20" rx="3" fill="#7F77DD" opacity="0.6"/>
+
+<!-- Traversal: tier 1 -> tier 2 -->
+<path d="M260 150 L230 168" fill="none" stroke="#5DCAA5" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+<path d="M420 150 L450 168" fill="none" stroke="#5DCAA5" stroke-width="2" stroke-linecap="round" opacity="0.65"/>
+<circle cx="260" cy="150" r="3" fill="#5DCAA5" opacity="0.7"/>
+<circle cx="420" cy="150" r="3" fill="#5DCAA5" opacity="0.7"/>
+
+<!-- TIER 2: two bars -->
+<rect x="160" y="168" width="180" height="28" rx="5" fill="#fff" opacity="0.82"/>
+<rect x="170" y="173" width="36" height="18" rx="3" fill="#5DCAA5" opacity="0.7"/>
+<rect x="212" y="173" width="24" height="18" rx="3" fill="#7F77DD" opacity="0.6"/>
+<rect x="242" y="173" width="46" height="18" rx="3" fill="#5DCAA5" opacity="0.55"/>
+<rect x="294" y="173" width="18" height="18" rx="3" fill="#7F77DD" opacity="0.5"/>
+<rect x="318" y="173" width="16" height="18" rx="3" fill="#5DCAA5" opacity="0.45"/>
+
+<rect x="360" y="168" width="160" height="28" rx="5" fill="#fff" opacity="0.82"/>
+<rect x="370" y="173" width="28" height="18" rx="3" fill="#7F77DD" opacity="0.7"/>
+<rect x="404" y="173" width="42" height="18" rx="3" fill="#5DCAA5" opacity="0.6"/>
+<rect x="452" y="173" width="26" height="18" rx="3" fill="#7F77DD" opacity="0.55"/>
+<rect x="484" y="173" width="28" height="18" rx="3" fill="#5DCAA5" opacity="0.5"/>
+
+<!-- Traversal: tier 2 -> tier 3 -->
+<path d="M210 196 L195 216" fill="none" stroke="#5DCAA5" stroke-width="1.8" stroke-linecap="round" opacity="0.55"/>
+<path d="M300 196 L330 216" fill="none" stroke="#5DCAA5" stroke-width="1.8" stroke-linecap="round" opacity="0.55"/>
+<path d="M420 196 L405 216" fill="none" stroke="#5DCAA5" stroke-width="1.8" stroke-linecap="round" opacity="0.55"/>
+<path d="M500 196 L510 216" fill="none" stroke="#5DCAA5" stroke-width="1.8" stroke-linecap="round" opacity="0.55"/>
+<circle cx="210" cy="196" r="2.5" fill="#5DCAA5" opacity="0.55"/>
+<circle cx="300" cy="196" r="2.5" fill="#5DCAA5" opacity="0.55"/>
+<circle cx="420" cy="196" r="2.5" fill="#5DCAA5" opacity="0.55"/>
+<circle cx="500" cy="196" r="2.5" fill="#5DCAA5" opacity="0.55"/>
+
+<!-- TIER 3: four bars (first set of 4) -->
+<rect x="150" y="216" width="105" height="26" rx="4" fill="#fff" opacity="0.68"/>
+<rect x="159" y="221" width="28" height="16" rx="3" fill="#5DCAA5" opacity="0.55"/>
+<rect x="193" y="221" width="20" height="16" rx="3" fill="#7F77DD" opacity="0.48"/>
+<rect x="219" y="221" width="28" height="16" rx="3" fill="#5DCAA5" opacity="0.42"/>
+<rect x="275" y="216" width="105" height="26" rx="4" fill="#fff" opacity="0.68"/>
+<rect x="284" y="221" width="24" height="16" rx="3" fill="#7F77DD" opacity="0.55"/>
+<rect x="314" y="221" width="36" height="16" rx="3" fill="#5DCAA5" opacity="0.48"/>
+<rect x="356" y="221" width="16" height="16" rx="3" fill="#7F77DD" opacity="0.4"/>
+<rect x="370" y="216" width="100" height="26" rx="4" fill="#fff" opacity="0.68"/>
+<rect x="379" y="221" width="34" height="16" rx="3" fill="#5DCAA5" opacity="0.52"/>
+<rect x="419" y="221" width="20" height="16" rx="3" fill="#7F77DD" opacity="0.45"/>
+<rect x="445" y="221" width="18" height="16" rx="3" fill="#5DCAA5" opacity="0.38"/>
+<rect x="465" y="216" width="105" height="26" rx="4" fill="#fff" opacity="0.68"/>
+<rect x="474" y="221" width="26" height="16" rx="3" fill="#7F77DD" opacity="0.5"/>
+<rect x="506" y="221" width="24" height="16" rx="3" fill="#5DCAA5" opacity="0.45"/>
+<rect x="536" y="221" width="26" height="16" rx="3" fill="#7F77DD" opacity="0.38"/>
+
+<!-- Traversal: tier 3 -> tier 4 -->
+<path d="M200 242 L188 262" fill="none" stroke="#5DCAA5" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
+<path d="M330 242 L315 262" fill="none" stroke="#5DCAA5" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
+<path d="M420 242 L435 262" fill="none" stroke="#5DCAA5" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
+<path d="M520 242 L508 262" fill="none" stroke="#5DCAA5" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
+
+<!-- TIER 4: four bars — TIGHTENED to match tier 3 width -->
+<rect x="150" y="262" width="96" height="24" rx="4" fill="#fff" opacity="0.52"/>
+<rect x="158" y="266" width="22" height="14" rx="2.5" fill="#5DCAA5" opacity="0.45"/>
+<rect x="186" y="266" width="28" height="14" rx="2.5" fill="#7F77DD" opacity="0.38"/>
+<rect x="220" y="266" width="18" height="14" rx="2.5" fill="#5DCAA5" opacity="0.32"/>
+<rect x="265" y="262" width="96" height="24" rx="4" fill="#fff" opacity="0.52"/>
+<rect x="273" y="266" width="24" height="14" rx="2.5" fill="#7F77DD" opacity="0.42"/>
+<rect x="303" y="266" width="20" height="14" rx="2.5" fill="#5DCAA5" opacity="0.36"/>
+<rect x="329" y="266" width="24" height="14" rx="2.5" fill="#7F77DD" opacity="0.3"/>
+<rect x="380" y="262" width="96" height="24" rx="4" fill="#fff" opacity="0.52"/>
+<rect x="388" y="266" width="30" height="14" rx="2.5" fill="#5DCAA5" opacity="0.4"/>
+<rect x="424" y="266" width="18" height="14" rx="2.5" fill="#7F77DD" opacity="0.35"/>
+<rect x="448" y="266" width="20" height="14" rx="2.5" fill="#5DCAA5" opacity="0.28"/>
+<rect x="465" y="262" width="96" height="24" rx="4" fill="#fff" opacity="0.52"/>
+<rect x="473" y="266" width="20" height="14" rx="2.5" fill="#7F77DD" opacity="0.4"/>
+<rect x="499" y="266" width="28" height="14" rx="2.5" fill="#5DCAA5" opacity="0.35"/>
+<rect x="533" y="266" width="20" height="14" rx="2.5" fill="#5DCAA5" opacity="0.28"/>
+
+<!-- Traversal: tier 4 -> tier 5 -->
+<path d="M195 286 L183 306" fill="none" stroke="#5DCAA5" stroke-width="1.2" stroke-linecap="round" opacity="0.35"/>
+<path d="M310 286 L298 306" fill="none" stroke="#5DCAA5" stroke-width="1.2" stroke-linecap="round" opacity="0.35"/>
+<path d="M430 286 L442 306" fill="none" stroke="#5DCAA5" stroke-width="1.2" stroke-linecap="round" opacity="0.35"/>
+<path d="M515 286 L527 306" fill="none" stroke="#5DCAA5" stroke-width="1.2" stroke-linecap="round" opacity="0.35"/>
+
+<!-- TIER 5: four bars — same bounds as tier 4 -->
+<rect x="150" y="306" width="84" height="22" rx="3" fill="#fff" opacity="0.38"/>
+<rect x="157" y="310" width="18" height="14" rx="2" fill="#5DCAA5" opacity="0.32"/>
+<rect x="181" y="310" width="24" height="14" rx="2" fill="#7F77DD" opacity="0.28"/>
+<rect x="211" y="310" width="16" height="14" rx="2" fill="#5DCAA5" opacity="0.22"/>
+<rect x="260" y="306" width="84" height="22" rx="3" fill="#fff" opacity="0.38"/>
+<rect x="267" y="310" width="20" height="14" rx="2" fill="#7F77DD" opacity="0.3"/>
+<rect x="293" y="310" width="26" height="14" rx="2" fill="#5DCAA5" opacity="0.26"/>
+<rect x="325" y="310" width="12" height="14" rx="2" fill="#7F77DD" opacity="0.2"/>
+<rect x="380" y="306" width="84" height="22" rx="3" fill="#fff" opacity="0.38"/>
+<rect x="387" y="310" width="26" height="14" rx="2" fill="#5DCAA5" opacity="0.28"/>
+<rect x="419" y="310" width="16" height="14" rx="2" fill="#7F77DD" opacity="0.24"/>
+<rect x="441" y="310" width="16" height="14" rx="2" fill="#5DCAA5" opacity="0.2"/>
+<rect x="480" y="306" width="84" height="22" rx="3" fill="#fff" opacity="0.38"/>
+<rect x="487" y="310" width="22" height="14" rx="2" fill="#7F77DD" opacity="0.26"/>
+<rect x="515" y="310" width="18" height="14" rx="2" fill="#5DCAA5" opacity="0.22"/>
+<rect x="539" y="310" width="18" height="14" rx="2" fill="#7F77DD" opacity="0.18"/>
+
+<!-- Traversal: tier 5 -> tier 6 -->
+<path d="M190 328 L178 348" fill="none" stroke="#5DCAA5" stroke-width="1" stroke-linecap="round" opacity="0.25"/>
+<path d="M300 328 L290 348" fill="none" stroke="#5DCAA5" stroke-width="1" stroke-linecap="round" opacity="0.25"/>
+<path d="M420 328 L432 348" fill="none" stroke="#5DCAA5" stroke-width="1" stroke-linecap="round" opacity="0.25"/>
+<path d="M522 328 L532 348" fill="none" stroke="#5DCAA5" stroke-width="1" stroke-linecap="round" opacity="0.25"/>
+
+<!-- TIER 6: four bars — same bounds -->
+<rect x="150" y="348" width="74" height="20" rx="3" fill="#fff" opacity="0.25"/>
+<rect x="157" y="352" width="16" height="12" rx="2" fill="#5DCAA5" opacity="0.22"/>
+<rect x="179" y="352" width="20" height="12" rx="2" fill="#7F77DD" opacity="0.18"/>
+<rect x="205" y="352" width="12" height="12" rx="2" fill="#5DCAA5" opacity="0.15"/>
+<rect x="255" y="348" width="74" height="20" rx="3" fill="#fff" opacity="0.25"/>
+<rect x="262" y="352" width="18" height="12" rx="2" fill="#7F77DD" opacity="0.2"/>
+<rect x="286" y="352" width="14" height="12" rx="2" fill="#5DCAA5" opacity="0.17"/>
+<rect x="306" y="352" width="16" height="12" rx="2" fill="#7F77DD" opacity="0.14"/>
+<rect x="395" y="348" width="74" height="20" rx="3" fill="#fff" opacity="0.25"/>
+<rect x="402" y="352" width="20" height="12" rx="2" fill="#5DCAA5" opacity="0.2"/>
+<rect x="428" y="352" width="16" height="12" rx="2" fill="#7F77DD" opacity="0.16"/>
+<rect x="450" y="352" width="12" height="12" rx="2" fill="#5DCAA5" opacity="0.13"/>
+<rect x="490" y="348" width="74" height="20" rx="3" fill="#fff" opacity="0.25"/>
+<rect x="497" y="352" width="16" height="12" rx="2" fill="#7F77DD" opacity="0.18"/>
+<rect x="519" y="352" width="18" height="12" rx="2" fill="#5DCAA5" opacity="0.15"/>
+<rect x="543" y="352" width="14" height="12" rx="2" fill="#7F77DD" opacity="0.12"/>
+
+<!-- TIER 7: ghost fade bars — same column bounds -->
+<rect x="155" y="382" width="64" height="18" rx="3" fill="#fff" opacity="0.15"/>
+<rect x="260" y="382" width="64" height="18" rx="3" fill="#fff" opacity="0.15"/>
+<rect x="400" y="382" width="64" height="18" rx="3" fill="#fff" opacity="0.15"/>
+<rect x="495" y="382" width="64" height="18" rx="3" fill="#fff" opacity="0.15"/>
+
+<!-- TIER 8: faintest -->
+<rect x="165" y="408" width="50" height="16" rx="2" fill="#fff" opacity="0.09"/>
+<rect x="270" y="408" width="50" height="16" rx="2" fill="#fff" opacity="0.09"/>
+<rect x="410" y="408" width="50" height="16" rx="2" fill="#fff" opacity="0.09"/>
+<rect x="505" y="408" width="50" height="16" rx="2" fill="#fff" opacity="0.09"/>
+
+<!-- TIER 9: barely visible -->
+<rect x="172" y="432" width="40" height="14" rx="2" fill="#fff" opacity="0.05"/>
+<rect x="278" y="432" width="40" height="14" rx="2" fill="#fff" opacity="0.05"/>
+<rect x="418" y="432" width="40" height="14" rx="2" fill="#fff" opacity="0.05"/>
+<rect x="512" y="432" width="40" height="14" rx="2" fill="#fff" opacity="0.05"/>
+
+<!-- Wordmark -->
+<text x="340" y="562" text-anchor="middle" font-family="sans-serif" font-size="38" font-weight="500" fill="#1a1a1a">Clear<tspan fill="#7F77DD">Memory</tspan><tspan fill="#1D9E75">AI</tspan></text>
+</svg>

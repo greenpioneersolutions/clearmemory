@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Auth Migration Discussion",
+    "create_time": 1710500000,
+    "mapping": {
+      "node1": {
+        "message": {
+          "author": { "role": "user" },
+          "content": { "parts": ["Should we migrate from Auth0 to Clerk?"] }
+        }
+      },
+      "node2": {
+        "message": {
+          "author": { "role": "assistant" },
+          "content": { "parts": ["Based on your requirements, Clerk offers better developer experience and more competitive pricing for your scale."] }
+        }
+      }
+    }
+  }
+]
