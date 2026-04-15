@@ -1,0 +1,63 @@
+{
+  "clear_format_version": "1.0",
+  "source": "sprint-12-retrospective",
+  "exported_at": "2026-04-05T16:00:00Z",
+  "memories": [
+    {
+      "date": "2026-04-04",
+      "author": "Sarah Chen",
+      "type": "retrospective",
+      "content": "Sprint 12 deployment went smoothly. Zero-downtime deployment using blue-green strategy with Kubernetes. The new health check endpoints were critical — they caught a bad pod before traffic was routed to it.",
+      "tags": { "team": "platform", "project": "sprint-12", "domain": "infrastructure" }
+    },
+    {
+      "date": "2026-04-04",
+      "author": "Kai Rivera",
+      "type": "retrospective",
+      "content": "Database query performance improved by 40% after adding the composite index on (user_id, created_at). The slow query log was the key diagnostic tool — we should run it monthly.",
+      "tags": { "team": "platform", "project": "sprint-12", "domain": "infrastructure" }
+    },
+    {
+      "date": "2026-04-04",
+      "author": "Priya Sharma",
+      "type": "retrospective",
+      "content": "Frontend bundle size reduced from 1.2MB to 480KB through code splitting and lazy loading. Lighthouse score went from 62 to 91. The biggest win was lazy-loading the chart library.",
+      "tags": { "team": "frontend", "project": "sprint-12", "domain": "frontend" }
+    },
+    {
+      "date": "2026-04-04",
+      "author": "Sarah Chen",
+      "type": "decision",
+      "content": "Tech debt paydown: allocated 20% of Sprint 13 to address the 3 highest-priority items. 1) Replace hand-rolled CSV parser with the csv crate. 2) Migrate remaining callback-style async code to async/await. 3) Add integration tests for the payment flow.",
+      "tags": { "team": "platform", "project": "sprint-13", "domain": "engineering" }
+    },
+    {
+      "date": "2026-04-04",
+      "author": "Kai Rivera",
+      "type": "incident",
+      "content": "Sprint 12 had one P2 incident: the search indexer fell behind by 45 minutes during the product catalog import. Root cause was unbounded memory usage in the batch processor. Fixed by adding backpressure with a bounded channel (capacity 1000).",
+      "tags": { "team": "platform", "project": "sprint-12", "domain": "infrastructure" }
+    },
+    {
+      "date": "2026-04-04",
+      "author": "Priya Sharma",
+      "type": "retrospective",
+      "content": "User feedback on the new onboarding flow is positive. Completion rate improved from 34% to 67% after simplifying the 5-step wizard to 3 steps. The biggest drop-off was at the email verification step — we moved it to post-signup.",
+      "tags": { "team": "frontend", "project": "sprint-12", "domain": "product" }
+    },
+    {
+      "date": "2026-04-04",
+      "author": "Sarah Chen",
+      "type": "decision",
+      "content": "API versioning strategy decided: URL path versioning (/v1/, /v2/) rather than header-based. Reason: easier for clients to understand and debug, better for caching, and our API gateway already supports path-based routing. Header-based is more RESTful but adds complexity our team doesn't need.",
+      "tags": { "team": "platform", "domain": "architecture" }
+    },
+    {
+      "date": "2026-04-04",
+      "author": "Kai Rivera",
+      "type": "retrospective",
+      "content": "Monitoring improvements: added 4 new Grafana dashboards for API latency, database connection pool health, Redis hit rates, and deployment status. The connection pool dashboard caught the near-OOM situation before it impacted users.",
+      "tags": { "team": "platform", "project": "sprint-12", "domain": "infrastructure/monitoring" }
+    }
+  ]
+}

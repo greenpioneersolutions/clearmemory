@@ -6,6 +6,10 @@ rust-version = "1.75"
 description = "A high-performance, local-first AI memory engine"
 license = "MIT"
 repository = "https://github.com/greenpioneersolutions/clearmemory"
+readme = "README.md"
+keywords = ["memory", "ai", "context", "retrieval", "local-first"]
+categories = ["command-line-utilities", "database"]
+authors = ["Green Pioneer Solutions"]
 
 [[bin]]
 name = "clearmemory"

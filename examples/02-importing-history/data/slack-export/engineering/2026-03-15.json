@@ -1,0 +1,27 @@
+[
+  {
+    "user": "sarah.chen",
+    "ts": "1710489600.000100",
+    "text": "Hey team, auth migration is green-lit for March 20. Security review passed. Please make sure your feature branches are rebased before the cutover."
+  },
+  {
+    "user": "kai.rivera",
+    "ts": "1710489900.000200",
+    "text": "Nice! I'll have the PostgreSQL migration ready by then too. We can do both in the same maintenance window to minimize downtime."
+  },
+  {
+    "user": "priya.sharma",
+    "ts": "1710490200.000300",
+    "text": "Frontend is ready. The new Clerk components are behind a feature flag. I can flip it during the cutover window."
+  },
+  {
+    "user": "sarah.chen",
+    "ts": "1710490800.000400",
+    "text": "Perfect. Deployment plan: 1) Enable maintenance page, 2) Run PostgreSQL migration, 3) Switch auth provider to Clerk, 4) Flip frontend feature flag, 5) Smoke test, 6) Disable maintenance page. Estimated total downtime: 30 minutes."
+  },
+  {
+    "user": "kai.rivera",
+    "ts": "1710491100.000500",
+    "text": "I'll be on call during the cutover. Rollback plan: revert the auth config and re-enable Auth0. PostgreSQL migration is backward-compatible so no rollback needed there."
+  }
+]

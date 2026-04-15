@@ -1,0 +1,43 @@
+{
+  "clear_format_version": "1.0",
+  "source": "meridian-architecture",
+  "exported_at": "2026-04-10T10:00:00Z",
+  "memories": [
+    {
+      "date": "2026-03-01",
+      "author": "Sarah Chen",
+      "content": "Architecture decision: microservices over monolith. We started as a monolith but the team has grown to 12 engineers across 3 squads. The monolith deploy queue is blocking teams. We'll extract auth-service, payment-service, and notification-service first. Shared libraries via internal crate registry.",
+      "tags": { "team": "platform", "domain": "architecture" }
+    },
+    {
+      "date": "2026-03-05",
+      "author": "Kai Rivera",
+      "content": "Service mesh evaluation: chose Istio over Linkerd. Istio has better observability out of the box (Kiali, Jaeger integration), mTLS between services without code changes, and traffic management for canary deployments. Linkerd is simpler but we need the advanced traffic policies for our gradual migration.",
+      "tags": { "team": "platform", "domain": "infrastructure" }
+    },
+    {
+      "date": "2026-03-08",
+      "author": "Priya Sharma",
+      "content": "Frontend architecture: micro-frontends using Module Federation. Each squad owns a section of the UI. Shell app handles routing and shared auth state. Individual bundles deploy independently. This mirrors the backend microservices split.",
+      "tags": { "team": "frontend", "domain": "architecture" }
+    },
+    {
+      "date": "2026-03-12",
+      "author": "Sarah Chen",
+      "content": "Event-driven communication between services using NATS JetStream. Chose NATS over Kafka because: 1) simpler operations (single binary vs ZooKeeper cluster), 2) built-in JetStream for persistence, 3) request-reply pattern for synchronous calls, 4) 10x lower memory footprint. Kafka is overkill for our event volume (5K events/sec peak).",
+      "tags": { "team": "platform", "domain": "architecture" }
+    },
+    {
+      "date": "2026-03-15",
+      "author": "Kai Rivera",
+      "content": "Database per service strategy: each microservice owns its data store. auth-service uses PostgreSQL, payment-service uses PostgreSQL with pgcrypto, notification-service uses Redis for the queue plus PostgreSQL for templates. No cross-service database queries — all communication via NATS events or gRPC calls.",
+      "tags": { "team": "platform", "domain": "architecture" }
+    },
+    {
+      "date": "2026-03-20",
+      "author": "Priya Sharma",
+      "content": "Design system: adopted Radix UI primitives with custom Tailwind CSS theme. Radix gives us accessible, unstyled components. Tailwind handles the visual layer. This replaces our hand-rolled component library which had accessibility gaps. Storybook for documentation. Design tokens synced from Figma via Style Dictionary.",
+      "tags": { "team": "frontend", "domain": "frontend" }
+    }
+  ]
+}

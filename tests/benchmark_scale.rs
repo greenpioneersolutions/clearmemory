@@ -332,7 +332,7 @@ fn test_scale_keyword_only() {
     println!("║  Measures how retrieval degrades as corpus grows.        ║");
     println!("╠════════════════════════════════════════════════════════════╣");
 
-    for &size in &[500, 1000, 2000, 3000, 4000, 5000] {
+    for &size in &[500, 1000, 2000, 3000, 4000, 5000, 10000] {
         evaluate_at_scale(size, None);
     }
 
@@ -353,9 +353,26 @@ fn test_scale_full_pipeline() {
     println!("║  Semantic + Keyword + Temporal + Entity Graph.           ║");
     println!("╠════════════════════════════════════════════════════════════╣");
 
-    for &size in &[500, 1000, 2000, 3000, 4000, 5000] {
+    for &size in &[500, 1000, 2000, 3000, 4000, 5000, 10000] {
         evaluate_at_scale(size, Some(&embedder));
     }
+
+    println!("╚════════════════════════════════════════════════════════════╝");
+    println!();
+}
+
+/// Run only the 10,000 memory benchmark (separate test for long-running isolation).
+#[test]
+#[ignore]
+fn test_scale_10k_full_pipeline() {
+    let embedder = clearmemory::storage::embeddings::EmbeddingManager::new("bge-small-en").unwrap();
+
+    println!();
+    println!("╔════════════════════════════════════════════════════════════╗");
+    println!("║  10K CORPUS BENCHMARK — Full Pipeline (BGE-Small-EN)     ║");
+    println!("╠════════════════════════════════════════════════════════════╣");
+
+    evaluate_at_scale(10000, Some(&embedder));
 
     println!("╚════════════════════════════════════════════════════════════╝");
     println!();

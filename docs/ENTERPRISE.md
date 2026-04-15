@@ -1,5 +1,35 @@
 # Clear Memory — Enterprise Guide
 
+## Current Maturity
+
+**What is measured and shipping (v1):**
+- Rust single-binary with CLI, MCP server, and HTTP REST API
+- Verbatim storage with AES-256 encryption at rest (SQLCipher + AES-256-GCM)
+- 4-strategy parallel retrieval: semantic (BGE-Small-EN, 384d), keyword (SQLite LIKE), temporal, entity graph
+- Reciprocal Rank Fusion merge with configurable parameters
+- **Measured retrieval quality:** 93.3% Recall@10 stable from 500 to 10,000 memories; 76.8% Recall@10 on hard LongMemEval-style queries. Full benchmarks: [benchmarks.md](benchmarks.md)
+- API token authentication with scoped permissions and TTL expiration
+- Regex-based secret scanning (9 pattern categories) with warn/redact/block modes
+- 4-level data classification with manual assignment and auto-escalation on secret detection
+- Tamper-evident audit log with chained SHA-256 hashes and external checkpoints
+- 7 import format parsers (Claude Code, Copilot, ChatGPT, Slack, Markdown, Clear Format, auto-detect)
+- Backup/restore with encrypted snapshots
+- Tag taxonomy (team/repo/project/domain) and stream-based organization
+
+**What is designed and planned:**
+- Cross-encoder reranker (BGE-Reranker-Base) — implemented, not yet wired into default pipeline
+- Curator model (Qwen3-0.6B via candle) — architecture defined, candle integration in progress
+- Reflect/synthesis model (Qwen3-4B) — architecture defined, candle integration in progress
+- PII pattern detection — designed, patterns documented in security.md
+- Entropy-based and structured-format secret scanning — designed for v1.1/v1.2
+- LLM-based content classification — designed for v2
+- Insider threat detection — access pattern monitoring designed for shared deployments
+- Two-person purge authorization — designed for shared deployments
+
+**Accuracy claims in this document refer to measured benchmarks unless explicitly marked as targets.** The numbers above are from automated test suites with full reproduction commands. See [benchmarks.md](benchmarks.md).
+
+---
+
 ## The Problem We Solve
 
 Your engineering teams have conversations with AI every day. Architecture decisions, debugging sessions, code reviews, project planning — all happening in conversations with Copilot, Claude Code, ChatGPT, and Cursor. When those sessions end, the reasoning disappears.
@@ -26,7 +56,7 @@ For organizations that need enhanced AI features (Tier 2), a local language mode
 
 Clear Memory's context compiler assembles the minimum viable context for each prompt within a configurable token budget. Instead of loading the entire conversation history or project context into every prompt, it loads identity context (~50 tokens), a project working set (~500 tokens), and targeted memory fragments — only when relevant.
 
-Early modeling suggests 60-80% reduction in input tokens per interaction. Under token-based pricing models, this translates directly to measurable savings per team, per project, per month. ClearPathAI's analytics dashboard tracks tokens saved alongside retrieval metrics, giving engineering leadership a clear view of ROI.
+Token savings depend on the baseline context management of the consuming tool. For custom GenAI applications that stuff full conversation history into every prompt, the context compiler provides significant token reduction by assembling only relevant fragments within a configurable budget. For tools that already manage context (Claude Code, Copilot), the primary measurable value is institutional knowledge retention and cross-session retrieval — not token reduction. ClearPathAI's analytics dashboard tracks tokens injected, retrieval hit rates, and corpus health, giving engineering leadership a clear view of what the system contributes to each interaction.
 
 ### Institutional knowledge that survives attrition
 
@@ -114,6 +144,22 @@ Clear Memory runs as a sidecar process behind ClearPathAI's Electron desktop app
 
 **Typical use:** "I want my non-technical team members to benefit from AI memory without learning command-line tools."
 
+### Model 5: HTTP API Integration
+
+Clear Memory runs as a backend service called from custom tooling, CI/CD pipelines, and automation scripts — no MCP dependency required. The HTTP REST API provides the same 9 operations as MCP, accessible from any language or tool that can make HTTP requests.
+
+**Setup time:** Under 10 minutes. Start the server, generate an API token, call endpoints.
+
+**Infrastructure required:** Same as Model 3. Any environment that can reach `localhost:8080` or a network-accessible deployment.
+
+**Typical use:** "I want to integrate AI memory into our existing CI/CD pipeline, git hooks, and custom tooling without adopting MCP."
+
+**Integration examples:**
+- Git post-commit hooks that auto-retain session transcripts tagged with repo and branch
+- GitHub Actions that import PR discussion threads on merge
+- Custom scripts that wrap Claude Code or Copilot CLI with automatic session capture
+- Internal tools that query Clear Memory's recall endpoint for institutional knowledge
+
 ---
 
 ## How We Take Security Seriously
@@ -200,7 +246,7 @@ clearmemory recall "what was that auth decision?"
 
 ### For ClearPathAI Integration
 
-Clear Memory ships as the memory layer for ClearPathAI (Slice 31). See `docs/clearpathAI_integration.md` for the full integration specification.
+Clear Memory ships as the memory layer for ClearPathAI (Slice 31). Integration specification is documented in `CLAUDE.md` under "ClearPathAI Integration (Slice 31)".
 
 ---
 
@@ -210,14 +256,14 @@ Clear Memory ships as the memory layer for ClearPathAI (Slice 31). See `docs/cle
 |---|---|---|---|---|---|
 | **Local-only mode** | Yes (Tier 1) | No | No | Optional | Yes |
 | **Encryption at rest** | Yes (v1) | Enterprise only | SOC 2 | No | No |
-| **Benchmark (LongMemEval)** | Target 96%+ | 49% | 63.8% | Unpublished | 91.4% |
+| **Benchmark (LongMemEval)** | 76.8% measured ([benchmarks](benchmarks.md)) | 49% | 63.8% | Unpublished | 91.4% |
 | **Language** | Rust | Python | Python | Python | Python/Go |
 | **Runtime dependencies** | None | Python + vector DB | Python + Neo4j | Python + server | Docker + Postgres |
 | **Secret scanning** | Built-in | No | No | No | No |
 | **Legal hold** | Built-in | No | No | No | No |
 | **Audit log (tamper-evident)** | Yes | Enterprise only | Enterprise only | No | No |
 | **Token cost optimization** | Context compiler | Memory compression | N/A | N/A | N/A |
-| **Cost** | Free (open source) | $19-249/mo | $25+/mo | $20-200/mo | Free (open source) |
+| **Cost** | Free (Apache 2.0) | $19-249/mo | $25+/mo | $20-200/mo | Free (open source) |
 
 ---
 
@@ -226,12 +272,11 @@ Clear Memory ships as the memory layer for ClearPathAI (Slice 31). See `docs/cle
 | Document | Audience |
 |----------|----------|
 | `README.md` | Developers evaluating Clear Memory |
-| `ENTERPRISE.md` | This document — engineering leadership, security, architecture review |
-| `security.md` | CISO and security team — full threat model and controls |
-| `architecture.md` | Architecture review board — system design and data flow |
+| `docs/ENTERPRISE.md` | This document — engineering leadership, security, architecture review |
+| `docs/security.md` | CISO and security team — full threat model and controls |
+| `docs/architecture.md` | Architecture review board — system design and data flow |
+| `docs/benchmarks.md` | Engineering — retrieval quality benchmarks with measured results |
 | `CLAUDE.md` | Development team — project constitution with every technical detail |
-| `docs/runbook.md` | Operations team — backup, restore, migration, troubleshooting |
-| `docs/integration_guide.md` | Integration engineers — MCP and HTTP API guide |
 
 ---
 

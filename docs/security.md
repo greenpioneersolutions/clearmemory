@@ -205,6 +205,43 @@ clearmemory security scan --remediate              # redact secrets in existing 
 
 Retroactive remediation re-encrypts the verbatim file with secrets replaced by `[REDACTED]` markers. The original content is overwritten and unrecoverable (this is intentional for credential management).
 
+### Detection Limitations
+
+The current secret scanning pipeline is **regex-based** and catches known pattern formats. It has inherent limitations:
+
+| Limitation | Example | Why It's Missed |
+|------------|---------|----------------|
+| Encoded secrets | Base64-encoded API keys, URL-encoded tokens | Regex matches raw patterns, not decoded content |
+| Context-dependent secrets | `password = config["db_pass"]` (no literal value) | The credential isn't in the text — only a reference to it |
+| High-entropy strings without known prefixes | `a8f2b9c1d4e5...` (64-char hex string used as a key) | No known prefix like `AKIA` or `ghp_` to anchor the match |
+| Secrets in non-text formats | Binary data, images with embedded metadata | Text-only scanning |
+| Rotated/custom credential formats | Organization-specific token formats | Only built-in patterns are detected |
+
+**The current scanning is a net — not a guarantee.** It catches the most common credential patterns but should not be relied upon as the sole control against credential exposure. Secret rotation, access scoping, and credential management policies remain essential.
+
+### Secret Scanning Hardening Roadmap
+
+**v1.1 — Entropy-based detection (planned)**
+
+Add a Shannon entropy analysis pass for strings that appear in key-value contexts. When a string has entropy above a configurable threshold (default: 4.5 bits/char) and appears as a value in a key-value pattern (e.g., `token = "..."`, `api_key: ...`, `Authorization: Bearer ...`), flag it as a potential secret.
+
+This catches high-entropy strings that don't match any known prefix pattern — such as custom-format API keys, generated passwords, and hex-encoded secrets.
+
+```toml
+[security.secret_scanning]
+entropy_detection_enabled = false    # v1.1 planned
+entropy_threshold = 4.5             # Shannon entropy bits per character
+entropy_min_length = 20             # minimum string length to analyze
+```
+
+**v1.2 — Structured format scanning (planned)**
+
+Parse JSON, YAML, TOML, and `.env` content within memories and scan values in keys matching secret-related names: `password`, `passwd`, `token`, `secret`, `key`, `credential`, `api_key`, `apikey`, `access_key`, `private_key`, `auth`. This catches secrets that are properly structured in config files but don't match any specific provider pattern.
+
+**v2 — LLM-based secret detection (planned)**
+
+Investigate integration with GitHub Advanced Security's secret scanning pattern database for broader coverage. Alternatively, use the curator model (Qwen3-0.6B) or a dedicated classifier to identify secrets through content understanding rather than pattern matching — recognizing that "the database password is hunter2" contains a credential even though `hunter2` has low entropy and no known prefix.
+
 ---
 
 ## Data Classification
@@ -234,6 +271,40 @@ Memory (confidential) → retrieval results
 ```
 
 Every piece of derived content carries a `source_classifications` field tracking all source memory classifications. The highest classification in the chain determines cloud eligibility.
+
+### Classification Roadmap
+
+**Phase 1: v1 — Manual classification with auto-escalation (current)**
+
+Classification is set manually on retain (`--classification confidential`) or defaults to `internal`. Auto-escalation occurs only when the secret scanner detects credentials — the memory is automatically classified as `confidential` regardless of the user-specified level.
+
+**Phase 2: v1.x — PII pattern detection**
+
+When `pii_detection_enabled = true` in config, the retain path runs PII pattern detection in addition to secret scanning. Detected PII auto-classifies the memory as `pii`.
+
+Detected PII patterns:
+
+| Pattern | Examples | Regex |
+|---------|----------|-------|
+| Email addresses | `user@company.com` | `[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}` |
+| Phone numbers | `+1-555-123-4567`, `(555) 123-4567` | `(\+?1[-.]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}` |
+| Social Security Numbers | `123-45-6789` | `\b\d{3}-\d{2}-\d{4}\b` |
+| Credit card numbers | `4111-1111-1111-1111` | `\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b` |
+| IP addresses (v4) | `192.168.1.1` | `\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b` |
+| Names in key-value context | `name: John Smith`, `author: Jane Doe` | `(name|author|patient|employee)\s*[:=]\s*[A-Z][a-z]+\s+[A-Z][a-z]+` |
+| Date of birth patterns | `DOB: 01/15/1990` | `(dob|date.of.birth|born)\s*[:=]\s*\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}` |
+
+Like secret scanning, PII detection supports three modes: `warn` (flag + auto-classify as pii), `redact` (replace with `[PII:<type>]`), `block` (reject retain).
+
+```toml
+[compliance]
+pii_detection_enabled = false    # enable for environments handling personal data
+pii_detection_mode = "warn"      # "warn", "redact", "block"
+```
+
+**Phase 3: v2 — LLM-based content classification**
+
+Use the curator model (Qwen3-0.6B) or a dedicated classification model to automatically classify content at ingestion time based on content analysis — not just pattern matching. This enables classification based on topic sensitivity (e.g., a discussion about a security vulnerability is `confidential` even without credentials present), organizational context, and semantic understanding of what constitutes sensitive information.
 
 ---
 

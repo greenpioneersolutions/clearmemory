@@ -1,0 +1,66 @@
+{
+  "clear_format_version": "1.0",
+  "source": "meridian-team-decisions",
+  "exported_at": "2026-04-10T10:00:00Z",
+  "memories": [
+    {
+      "date": "2026-03-10",
+      "author": "Sarah Chen",
+      "type": "decision",
+      "content": "Team decided to migrate authentication from Auth0 to Clerk. Clerk offers better DX, built-in React components, and pricing scales better for our user count. Auth0 was costing us $1,200/month for features we weren't using. Clerk's free tier covers our current needs and their enterprise tier is half the cost.",
+      "tags": {
+        "team": "platform",
+        "repo": "auth-service",
+        "project": "q1-migration",
+        "domain": "security/auth"
+      },
+      "metadata": {
+        "participants": ["Sarah Chen", "Kai Rivera", "Priya Sharma"]
+      }
+    },
+    {
+      "date": "2026-03-12",
+      "author": "Kai Rivera",
+      "type": "decision",
+      "content": "Selected GitHub Actions for CI/CD pipeline, replacing Jenkins. Key factors: native GitHub integration eliminates webhook maintenance, YAML configuration is version-controlled by default, and the hosted runners remove our need to manage build servers. Migration plan: move non-critical repos first, then production repos after 2-week validation.",
+      "tags": {
+        "team": "platform",
+        "repo": "infrastructure",
+        "project": "q1-migration",
+        "domain": "infrastructure/ci-cd"
+      }
+    },
+    {
+      "date": "2026-03-18",
+      "author": "Priya Sharma",
+      "type": "decision",
+      "content": "Chose Prometheus plus Grafana for monitoring stack over Datadog. Prometheus is open source, runs on our existing infrastructure, and the PromQL query language is more flexible for our custom metrics. Grafana dashboards are shareable and version-controlled. Datadog would cost $23 per host per month, Prometheus is free. Trade-off: we own the operational burden.",
+      "tags": {
+        "team": "platform",
+        "domain": "infrastructure/monitoring"
+      }
+    },
+    {
+      "date": "2026-03-22",
+      "author": "Sarah Chen",
+      "type": "decision",
+      "content": "Frontend state management: adopting Zustand over Redux. Zustand has 90% less boilerplate, no provider wrapping, and the bundle size is 1.1KB vs Redux Toolkit's 12KB. For our use case (moderate state complexity, 15 stores), Zustand's simplicity wins. Redux's middleware ecosystem is powerful but we only used thunk, which Zustand handles natively.",
+      "tags": {
+        "team": "frontend",
+        "repo": "web-app",
+        "domain": "frontend"
+      }
+    },
+    {
+      "date": "2026-03-25",
+      "author": "Kai Rivera",
+      "type": "incident",
+      "content": "Production outage: API gateway returned 502 for 12 minutes. Root cause was connection pool exhaustion in the PostgreSQL adapter. The pool was set to max 10 connections but our traffic spike needed 40. Fixed by increasing pool max to 50 and adding connection timeout of 5 seconds. Added PgBouncer as connection pooler for long-term fix.",
+      "tags": {
+        "team": "platform",
+        "repo": "api-gateway",
+        "domain": "infrastructure"
+      }
+    }
+  ]
+}

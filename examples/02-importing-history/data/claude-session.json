@@ -1,0 +1,10 @@
+[
+  {"role": "user", "content": "Help me fix the authentication middleware — it's not properly validating JWT tokens. Users are getting 401 errors even with valid tokens."},
+  {"role": "assistant", "content": "I can see the issue in `src/middleware/auth.ts`. The middleware is checking the token signature but not validating the expiration claim. Line 42 calls `jwt.verify(token, secret)` but doesn't check if `exp` is in the future. Let me fix that by adding `clockTolerance: 30` to the verify options and explicitly checking the exp claim."},
+  {"role": "user", "content": "That fixed the 401 errors. But now I'm seeing a different issue — some tokens that should be rejected are getting through. Can you check the issuer validation?"},
+  {"role": "assistant", "content": "Found it. The `issuer` field in the JWT verification options is set to `'auth0'` but after the Clerk migration, tokens are being issued by `'clerk'`. I've updated the allowed issuers to `['clerk', 'auth0']` to support the migration period where both providers are active. After the migration is complete, remove `'auth0'` from this list."},
+  {"role": "user", "content": "Perfect. Can you also add rate limiting to the auth endpoints? We're seeing brute force attempts."},
+  {"role": "assistant", "content": "I've added a token bucket rate limiter to the auth endpoints. Configuration: 10 requests per minute per IP for `/auth/login` and `/auth/token`, 3 requests per minute for `/auth/reset-password`. The limiter uses an in-memory store with a 15-minute TTL for the buckets. For production, I'd recommend switching to Redis-backed rate limiting so it works across multiple instances."},
+  {"role": "user", "content": "Should we use Redis or stick with in-memory for now?"},
+  {"role": "assistant", "content": "For now, in-memory is fine — you're running a single instance behind the load balancer. The trade-off: if the process restarts, rate limit counters reset. That's acceptable for auth rate limiting where the window is short (1 minute). Switch to Redis when you scale to multiple instances. I've left a TODO comment marking the Redis migration path."}
+]

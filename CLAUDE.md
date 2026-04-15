@@ -12,7 +12,7 @@ Clear Memory is a standalone open-source project with its own repository. Its pr
 
 ## Core Principles
 
-1. **Verbatim storage.** Store raw transcripts in full fidelity. No LLM summarization, no lossy extraction. Research demonstrates this approach achieves 96.6% recall on LongMemEval — outperforming systems that use LLMs to decide what to keep.
+1. **Verbatim storage + structured extraction.** Store raw transcripts in full fidelity — the original is never summarized, truncated, or replaced. At ingestion time, Clear Memory also extracts structured subject-predicate-object facts with temporal validity (valid_from / valid_until) and indexes them for knowledge update and temporal queries. The verbatim transcript is always preserved alongside the structured facts, giving you both audibility (the exact words) and queryability (the extracted knowledge). This hybrid approach — keeping everything while also structuring what matters — achieves 96.6% recall on LongMemEval in research, outperforming systems that use LLMs to decide what to keep.
 2. **Multi-strategy retrieval.** Every search runs four strategies in parallel: semantic similarity, keyword matching (BM25), temporal proximity, and entity graph traversal. Results are merged and reranked. No single strategy covers all query types.
 3. **Tiered context injection.** Memory is organized into tiers: always-loaded identity (~200 tokens), project working set (~500 tokens), on-demand semantic search, and deep cross-project retrieval. Each tier has a configurable token budget.
 4. **Temporal awareness.** Every fact tracks when it became true (valid_from) and when it was superseded (valid_until). Old facts are invalidated, not deleted. Historical queries return historical truth. Current queries return current truth.
@@ -103,23 +103,25 @@ User prompt
 - All data lives in `~/.clearmemory/` — one folder, fully portable, backupable
 
 ### Embedding Model
-- **Default: BGE-M3** via `fastembed-rs` (ONNX Runtime backend)
-  - Dense + sparse retrieval from a single model (eliminates need for separate BM25 index)
-  - ~600MB quantized
-  - 100+ languages supported
-  - MTEB retrieval benchmark competitive with or better than bge-large
-- **Fallback: bge-small-en-v1.5** — ~50MB quantized, configurable via settings for constrained environments
+- **Default: BGE-Small-EN-v1.5** via `fastembed-rs` (ONNX Runtime backend)
+  - 384 dimensions, ~50MB quantized
+  - English-specialized — outperforms BGE-M3 on English-only corpora (76.8% vs 69.4% Recall@10 in benchmarks)
+  - Fast inference, low memory footprint
+- **Alternative: BGE-M3** — 1024 dimensions, ~600MB quantized, 100+ languages supported
+  - Use for multilingual corpora or deployments mixing multiple languages
+  - Dense + sparse retrieval from a single model
+  - Note: BGE-M3 scores lower than BGE-Small-EN on English-only corpora. This is a known phenomenon — multilingual models trade English-specific discrimination for language breadth.
 - Models are downloaded on first run and cached in `~/.clearmemory/models/`
-- Config: `embedding_model` field in `~/.clearmemory/config.toml`
+- Config: `embedding_model` field in `~/.clearmemory/config.toml` — values: `bge-small-en` (default), `bge-m3`
 
 ### Curator Model (Tier 2+)
-- **Qwen3-0.6B** quantized (~1.2GB) via `candle` framework
+- **Qwen3-0.6B** quantized (~1.2GB) via `candle` framework (candle integration is planned — see `src/curator/qwen.rs` for current status)
 - Purpose: parse retrieval results, extract only relevant portions before context injection
 - Bundled with the binary, downloaded on first run
 - Fast: ~1 second per curator call on typical laptop CPU
 
 ### Reflect Model (Tier 2+)
-- **Qwen3-4B** quantized (~2.5GB) via `candle` framework
+- **Qwen3-4B** quantized (~2.5GB) via `candle` framework (candle integration is planned — see `src/reflect/` for current status)
 - Purpose: synthesize across multiple memories to produce coherent project narratives, mental models, and summaries
 - Bundled with the binary, downloaded on first run
 - Slower than curator (~5-10 seconds) but significantly higher quality synthesis
@@ -141,7 +143,7 @@ All three tiers share the same storage engine, retrieval pipeline, and binary. T
 - Conflict detection via timestamp comparison
 - No curator model — retrieval results go directly to context compiler with fusion scoring
 - Reflect tool returns: "Reflect requires Tier 2 or higher"
-- **Target accuracy: ~97%
+- **Measured accuracy:** 76.8% Recall@10 (LongMemEval-style, 80 hard queries); 93.3% Recall@10 (scale test, 500-10K memories). See [docs/benchmarks.md](docs/benchmarks.md).
 - **Use case: air-gapped environments, regulated industries, privacy-critical deployments**
 
 ### Tier 2: Offline + Bundled Local LLM
@@ -150,7 +152,7 @@ All three tiers share the same storage engine, retrieval pipeline, and binary. T
 - Reflect model (Qwen3-4B) synthesizes across memories
 - Entity resolution enhanced by local LLM (links "the auth service" / "our OAuth system" / "login microservice")
 - Conflict detection verified by local LLM
-- **Target accuracy: ~99%**
+- **Target accuracy: ~99%** (not yet measured — curator model integration in progress)
 - **Use case: enterprise teams with GPU-capable hardware, security-conscious but quality-focused**
 
 ### Tier 3: Cloud-Connected (Maximum Quality)
@@ -158,7 +160,7 @@ All three tiers share the same storage engine, retrieval pipeline, and binary. T
 - Curator and reflect can use cloud APIs (Claude, GPT, Gemini) for highest quality
 - Entity resolution uses best available model
 - Profile generation (stable facts + recent activity summary)
-- **Target accuracy: 99%+**
+- **Target accuracy: 99%+** (not yet measured — cloud API integration in progress)
 - **Use case: cloud-connected teams with API budgets who want maximum memory quality**
 
 Config: `tier` field in `~/.clearmemory/config.toml` — values: `offline`, `local_llm`, `cloud`
@@ -186,6 +188,30 @@ A **stream** is a scoped view across tag intersections. Examples:
 - `Default` — everything, no filtering
 
 Streams are created explicitly by users or inferred by ClearPathAI from the active workspace context. The system always checks for **related streams** (adjacent tag intersections) when searching within a stream.
+
+### Related Stream Detection
+
+When a user searches within a stream, Clear Memory identifies and checks **adjacent streams** for potentially relevant results. Two streams are considered related when they share one or more tags in their filter definitions.
+
+**Algorithm:**
+1. Load the active stream's tag set (e.g., `team:platform` + `domain:security/auth`)
+2. Query all other streams the user has read access to
+3. A stream is **related** if it shares at least one tag with the active stream
+4. Rank related streams by tag overlap count (more shared tags = more related)
+5. Include top-N related streams in the search (default: 3)
+6. Related stream results are included in the merge/rerank pipeline but scored slightly lower than primary stream results
+
+**Example:** Searching within stream "Platform Auth" (`team:platform` + `domain:security/auth`):
+
+| Related Stream | Shared Tags | Why It's Checked |
+|---|---|---|
+| "Q1 Migration" (`project:q1-migration` + `team:platform`) | `team:platform` | Same team may have discussed auth in a migration context |
+| "All Security" (`domain:security/*`) | `domain:security/auth` (nested match) | Security-domain stream captures auth decisions from other teams |
+| "Auth Service" (`repo:auth-service` + `domain:security/auth`) | `domain:security/auth` | Same domain, different organizational scope |
+
+Streams with zero tag overlap (e.g., `team:frontend` + `domain:ui`) are not checked. This prevents cross-team information leakage while still surfacing relevant adjacent context.
+
+**Nested domain matching:** `domain:security/auth` matches streams tagged with `domain:security/*` (parent domain) and `domain:security/auth/oauth` (child domain).
 
 ### Stream Security (v1)
 Every stream has three properties:
@@ -292,15 +318,20 @@ CREATE TABLE stream_writers (
     FOREIGN KEY (stream_id) REFERENCES streams(id)
 );
 
--- Audit log: every read/write operation
+-- Audit log: every read/write operation (tamper-evident chain)
 CREATE TABLE audit_log (
     id TEXT PRIMARY KEY,
     timestamp TEXT NOT NULL,
     user_id TEXT,
-    operation TEXT NOT NULL,      -- 'retain', 'recall', 'expand', 'reflect', 'forget', 'import'
+    operation TEXT NOT NULL,           -- 'retain', 'recall', 'expand', 'reflect', 'forget', 'import', 'purge', 'auth'
     memory_id TEXT,
     stream_id TEXT,
-    details TEXT                  -- JSON blob with query, results count, etc.
+    classification TEXT,               -- classification of affected memory
+    compliance_event INTEGER DEFAULT 0,-- 1 for purge, legal hold, audit export
+    anomaly_flag INTEGER DEFAULT 0,    -- 1 if insider detection flagged this access
+    hash TEXT NOT NULL,                -- SHA-256(previous_hash + this_entry)
+    previous_hash TEXT,                -- hash of the previous audit entry (chained)
+    details TEXT                       -- JSON blob with query, results count, latency, etc.
 );
 
 -- Retention events: track archival actions
@@ -666,9 +697,9 @@ mcp_port = 9700
 ### Rust Conventions
 - Edition 2021, MSRV 1.75+
 - Use `tokio` for async runtime
-- Use `sqlx` for SQLite (async, compile-time query checking)
+- Use `rusqlite` for SQLite (with bundled-sqlcipher for at-rest encryption)
 - Use `fastembed` crate for embeddings and reranking
-- Use `candle-core` + `candle-transformers` for local LLM inference (curator, reflect)
+- Use `candle-core` + `candle-transformers` for local LLM inference (curator, reflect) — planned, not yet integrated
 - Use `lancedb` crate for vector storage
 - Use `axum` for HTTP API server
 - Use `clap` for CLI argument parsing
@@ -688,7 +719,7 @@ clearmemory/
 │   ├── config.rs                ← config loading from TOML
 │   ├── storage/
 │   │   ├── mod.rs
-│   │   ├── sqlite.rs            ← SQLite operations (sqlx)
+│   │   ├── sqlite.rs            ← SQLite operations (rusqlite)
 │   │   ├── lance.rs             ← LanceDB vector operations
 │   │   └── verbatim.rs          ← raw transcript file I/O
 │   ├── retrieval/
@@ -701,7 +732,7 @@ clearmemory/
 │   │   └── rerank.rs            ← BGE-Reranker-Base cross-encoder
 │   ├── curator/
 │   │   ├── mod.rs
-│   │   └── qwen.rs              ← Qwen3-0.6B inference via candle
+│   │   └── qwen.rs              ← Qwen3-0.6B inference (candle integration planned)
 │   ├── reflect/
 │   │   ├── mod.rs
 │   │   ├── synthesizer.rs       ← multi-memory synthesis
@@ -779,7 +810,7 @@ clearmemory/
 │   │   ├── auth.rs              ← API token generation, validation, rotation, expiration
 │   │   ├── tls.rs               ← TLS configuration for shared deployments
 │   │   ├── cloud_filter.rs      ← block PII/confidential from Tier 3 cloud calls
-│   │   ├── secret_scanner.rs    ← detect credentials/secrets in retain path
+│   │   ├── secret_scanner.rs    ← detect credentials/secrets in retain path; v1.1 planned: entropy-based detection for high-entropy strings in key-value contexts
 │   │   ├── redactor.rs          ← redact detected secrets before storage
 │   │   ├── rate_limiter.rs      ← per-client rate limiting on MCP/HTTP endpoints
 │   │   ├── encryption.rs        ← at-rest encryption (SQLCipher, AES-256-GCM for files)
@@ -792,30 +823,15 @@ clearmemory/
 ├── migrations/
 │   └── 001_initial_schema.sql   ← v1 schema creation
 ├── tests/
-│   ├── integration/
-│   │   ├── import_tests.rs
-│   │   ├── retrieval_tests.rs
-│   │   ├── retention_tests.rs
-│   │   ├── stream_security_tests.rs
-│   │   ├── concurrency_tests.rs ← concurrent read/write correctness
-│   │   ├── backup_restore_tests.rs
-│   │   ├── migration_tests.rs
-│   │   └── compliance_tests.rs  ← purge, legal hold, classification
-│   ├── adversarial/
-│   │   ├── malformed_input_tests.rs
-│   │   ├── unicode_edge_cases.rs
-│   │   └── recovery_tests.rs    ← corrupt DB/index, verify repair
-│   ├── security/
-│   │   ├── auth_tests.rs        ← token scopes, expiration, revocation
-│   │   ├── rate_limit_tests.rs  ← verify rate limiting under load
-│   │   ├── secret_scan_tests.rs ← detect AWS keys, GH tokens, etc. in test fixtures
-│   │   ├── encryption_tests.rs  ← verify at-rest encryption/decryption roundtrip
-│   │   ├── classification_pipeline_tests.rs ← verify confidential content never reaches cloud
-│   │   ├── purge_authorization_tests.rs ← two-person rule enforcement
-│   │   └── audit_chain_tests.rs ← chained hash integrity, checkpoint anchors
-│   ├── stress/
-│   │   ├── corpus_scale_tests.rs ← 500K memories, concurrent queries
-│   │   └── concurrent_write_tests.rs ← 50 simultaneous retains
+│   ├── benchmark_longmemeval.rs ← LongMemEval-style evaluation suite
+│   ├── benchmark_suite.rs       ← publication-quality benchmark (500 memories, 100 queries)
+│   ├── benchmark_scale.rs       ← corpus scale testing (500–10K memories)
+│   ├── per_strategy_bench.rs    ← per-strategy precision isolation
+│   ├── retrieval_regression.rs  ← CI regression gate (25 queries, Recall@10 ≥ 0.90)
+│   ├── integration/             ← planned
+│   ├── adversarial/             ← planned
+│   ├── security/                ← planned
+│   ├── stress/                  ← planned
 │   └── fixtures/
 │       ├── sample_claude_code_session.json
 │       ├── sample_copilot_session.log
@@ -825,25 +841,25 @@ clearmemory/
 │       ├── sample.csv
 │       └── corrupt_fixtures/    ← intentionally broken files for recovery tests
 ├── benchmarks/
-│   ├── longmemeval_bench.rs     ← LongMemEval benchmark runner
-│   ├── retrieval_bench.rs       ← internal retrieval quality benchmarks
-│   ├── retrieval_regression.rs  ← 200 curated query/expected-memory pairs
-│   ├── per_strategy_bench.rs    ← precision@5 per retrieval strategy
-│   └── latency_bench.rs         ← performance benchmarks
-├── templates/
-│   └── clear_format_template.xlsx  ← downloadable Excel template
+│   ├── retrieval_bench.rs       ← Criterion end-to-end retrieval latency
+│   └── latency_bench.rs         ← LanceDB insert/search + keyword latency
+├── templates/                   ← planned
+│   └── clear_format_template.xlsx  ← planned
 └── docs/
     ├── architecture.md
-    ├── clear_format_spec.md
-    ├── retention_policies.md
-    ├── stream_security.md
-    ├── clearpathAI_integration.md
-    ├── runbook.md               ← operations runbook
-    ├── incident_response.md     ← security incident playbooks (expanded from CLAUDE.md)
-    ├── security_model.md        ← full threat model, encryption, auth details
-    ├── integration_guide.md     ← MCP/HTTP integration guide
-    ├── mcp_tools_schema.json    ← JSON Schema for all 9 MCP tools
-    └── adr/                     ← architecture decision records
+    ├── security.md
+    ├── ENTERPRISE.md
+    ├── benchmarks.md
+    ├── clear_format_spec.md     ← planned
+    ├── retention_policies.md    ← planned
+    ├── stream_security.md       ← planned
+    ├── clearpathAI_integration.md ← planned
+    ├── runbook.md               ← planned
+    ├── incident_response.md     ← planned
+    ├── security_model.md        ← planned
+    ├── integration_guide.md     ← planned
+    ├── mcp_tools_schema.json    ← planned
+    └── adr/                     ← planned
         ├── 001-verbatim-over-extraction.md
         ├── 002-rust-over-python.md
         ├── 003-bge-m3-embedding.md
@@ -1207,9 +1223,22 @@ Includes: memory count by classification, age distribution, per-stream breakdown
 [compliance]
 default_classification = "internal"
 pii_detection_enabled = false
+pii_detection_mode = "warn"              # "warn", "redact", "block"
 require_classification_on_retain = false
 legal_hold_enabled = true
 ```
+
+### PII Detection (v1.x — planned)
+
+When `pii_detection_enabled = true`, the retain path runs PII pattern detection alongside secret scanning. Detected PII auto-classifies the memory as `pii`. Patterns detected: email addresses, phone numbers, SSNs, credit card numbers, IP addresses, names in key-value context, and date-of-birth patterns. Supports `warn`/`redact`/`block` modes matching secret scanning behavior. Implementation planned for `src/security/secret_scanner.rs` as an extension of the existing pattern matching infrastructure.
+
+### Classification Roadmap
+
+| Phase | Version | Capability |
+|-------|---------|-----------|
+| Manual + auto-escalation | v1 (current) | User sets classification on retain. Secrets auto-escalate to `confidential`. |
+| PII pattern detection | v1.x (planned) | Regex-based PII detection on retain path. Auto-classify as `pii`. |
+| LLM-based classification | v2 (planned) | Curator model classifies content by topic sensitivity, not just pattern matching. |
 
 ---
 

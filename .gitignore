@@ -18,6 +18,11 @@ Thumbs.db
 # Clear Memory data directory (user data, not source)
 .clearmemory/
 
+# Large benchmark datasets (downloaded on demand)
+tests/fixtures/longmemeval_*.json
+tests/fixtures/locomo_*.json
+tests/results/
+
 # Environment files
 .env
 .env.local

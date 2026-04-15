@@ -14,7 +14,7 @@ Every architecture decision, debugging session, and project conversation your te
 
 **Existing solutions are lossy.** Other memory systems use an LLM to decide what to remember. They extract "user prefers Postgres" and throw away the conversation where you explained *why*. Clear Memory stores the actual words and lets retrieval find what matters.
 
-**Token costs are exploding.** Under token-based pricing, every bloated context window burns money. Clear Memory's context compiler sends only the relevant fragments — targeting 60-80% token reduction per interaction.
+**Token costs are exploding.** Under token-based pricing, every bloated context window burns money. Clear Memory's context compiler sends only the relevant fragments within a configurable token budget — injecting targeted memory instead of full conversation history.
 
 **Your data should stay yours.** Clear Memory runs entirely on your machine. No cloud, no subscriptions, no data leaving your network. You choose your security posture.
 
@@ -49,7 +49,7 @@ Your AI now remembers everything. Ask it about decisions from three months ago a
 
 ## How It Works
 
-**Store everything.** When a session ends, the full transcript is stored verbatim — no summarization, no extraction. Raw text with good embeddings achieves 96.6% recall on the LongMemEval benchmark, outperforming systems that use LLMs to decide what to keep.
+**Store everything.** When a session ends, the full transcript is stored verbatim alongside structured facts extracted at ingestion time. The original is never summarized or replaced. Our benchmarks measure **93.3% Recall@10** on scale tests (stable from 500 to 10,000 memories) and **76.8% Recall@10** on hard LongMemEval-style queries including multi-hop reasoning and abstraction. See [benchmarks.md](docs/benchmarks.md) for full methodology and results.
 
 **Search with four strategies.** Every query runs four retrieval strategies in parallel: semantic similarity, keyword matching, temporal proximity, and entity graph traversal. Results are merged and reranked. No single strategy covers all query types — running all four catches what any one would miss.
 
@@ -59,13 +59,57 @@ Your AI now remembers everything. Ask it about decisions from three months ago a
 
 ---
 
+## Structured Fact Extraction
+
+At ingestion time, Clear Memory extracts subject-predicate-object facts with temporal validity from each memory and indexes them in SQLite. The verbatim transcript is always preserved alongside the structured facts for audibility and full-context retrieval.
+
+```
+Stored memory: "We decided to migrate from Auth0 to Clerk"
+    │
+    ├── Verbatim file: original text preserved, encrypted, never modified
+    │
+    └── Extracted fact:
+        subject: "auth provider"  predicate: "is"  object: "Clerk"
+        valid_from: 2026-03-15    valid_until: NULL (current)
+```
+
+When a new fact contradicts an existing one, the old fact is automatically invalidated — not deleted. This enables:
+
+- **Knowledge update queries:** "What is our current auth provider?" returns Clerk, not Auth0.
+- **Historical queries:** "What was our auth provider in January?" returns Auth0 with full context.
+- **Conflict detection:** Contradictory facts are surfaced, not silently overwritten.
+
+---
+
+## How Clear Memory Works With Your Existing Tools
+
+Clear Memory's value depends on what you're integrating with. Two scenarios:
+
+### Scenario 1: You're building your own GenAI app
+
+If you're invoking an LLM directly (via API) with no existing context or memory management, Clear Memory's context compiler is the primary value. It assembles only the relevant memory fragments within a configurable token budget before your prompt reaches the model. Instead of stuffing the full conversation history into every call, you send identity (~50 tokens) + working set (~500 tokens) + targeted recall results. The token savings are real and measurable.
+
+### Scenario 2: You're using tools that already manage context
+
+Tools like Claude Code (with CLAUDE.md), GitHub Copilot (with workspace context), and Cursor already have their own context management. They already decide what to include in prompts. In this scenario, **Clear Memory's primary value is not token saving — it's cross-session and cross-team institutional memory.**
+
+What these tools can't do:
+- Remember decisions from three months ago across hundreds of sessions
+- Search across your entire team's AI conversation history
+- Answer "why did we decide X?" when the session where you discussed it is long gone
+- Carry context across different tools (a decision made in Claude Code, recalled in Copilot)
+
+The context compiler still helps by deduplicating against what the CLI has already loaded (CLAUDE.md contents, workspace files) to avoid double-injecting the same information. But the core ROI is institutional knowledge retention and cross-session retrieval, not token reduction.
+
+---
+
 ## Three Deployment Tiers
 
 | | Tier 1: Offline | Tier 2: Local LLM | Tier 3: Cloud |
 |---|---|---|---|
 | **External calls** | Zero | Zero | Cloud APIs |
 | **Data leaves machine** | Never | Never | Query context only |
-| **Accuracy** | ~96% | ~99% | 99%+ |
+| **Accuracy** | 76.8% measured ([benchmarks](docs/benchmarks.md)) | Higher (planned) | Highest (planned) |
 | **RAM** | ~1.2GB | ~2.4-4.9GB | ~2.4-4.9GB |
 | **Features** | Storage, retrieval, context compiler | + Curator, reflect, entity resolution | + Cloud-quality synthesis |
 | **Use case** | Air-gapped, regulated | GPU-equipped teams | Cloud-connected teams |
@@ -115,6 +159,119 @@ claude mcp add clearmemory -- clearmemory serve
 
 ---
 
+## HTTP API
+
+Clear Memory exposes a full REST API alongside MCP. Every operation available via MCP is also available over HTTP:
+
+```bash
+clearmemory serve --http --port 8080    # HTTP only
+clearmemory serve --both                # MCP (9700) + HTTP (8080)
+```
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/v1/recall` | POST | Search with stream/tag filters |
+| `/v1/expand/:id` | GET | Full verbatim content for a memory |
+| `/v1/retain` | POST | Store a memory with optional tags |
+| `/v1/forget` | POST | Invalidate a memory |
+| `/v1/status` | GET | Corpus overview, health |
+| `/v1/streams` | GET/POST | List or create streams |
+| `/v1/tags` | GET/POST | Manage tags |
+| `/health` | GET | Health check (K8s probe compatible) |
+
+All endpoints require `Authorization: Bearer <token>` header.
+
+---
+
+## Integration Without MCP
+
+Not every environment supports MCP. Clear Memory's HTTP API and CLI are equally valid integration paths.
+
+### Example 1: Git post-commit hook
+
+Auto-save session context on every commit:
+
+```bash
+#!/bin/bash
+# .git/hooks/post-commit
+REPO=$(basename "$(git rev-parse --show-toplevel)")
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+SESSION_LOG="$HOME/.claude/last_session.txt"
+
+if [ -f "$SESSION_LOG" ]; then
+  curl -s -X POST http://localhost:8080/v1/retain \
+    -H "Authorization: Bearer $CLEARMEMORY_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"content\": $(cat "$SESSION_LOG" | jq -Rs .),
+      \"tags\": {\"repo\": \"$REPO\", \"project\": \"$BRANCH\"}
+    }"
+fi
+```
+
+### Example 2: GitHub Action — import PR discussions on merge
+
+```yaml
+# .github/workflows/save-pr-memory.yml
+name: Save PR Discussion to Clear Memory
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  save-memory:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Export PR discussion as markdown
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          echo "# PR #$PR_NUM: ${{ github.event.pull_request.title }}" > /tmp/pr-discussion.md
+          echo "" >> /tmp/pr-discussion.md
+          echo "${{ github.event.pull_request.body }}" >> /tmp/pr-discussion.md
+          echo "" >> /tmp/pr-discussion.md
+          gh api "repos/$REPO/pulls/$PR_NUM/comments" \
+            --jq '.[] | "**\(.user.login):** \(.body)\n"' >> /tmp/pr-discussion.md
+
+      - name: Import to Clear Memory
+        env:
+          CLEARMEMORY_TOKEN: ${{ secrets.CLEARMEMORY_TOKEN }}
+        run: |
+          clearmemory import /tmp/pr-discussion.md \
+            --format markdown \
+            --tag repo:${{ github.event.repository.name }} \
+            --tag project:pr-${{ github.event.pull_request.number }}
+```
+
+### Example 3: Claude Code wrapper script
+
+Capture session output and retain via HTTP API:
+
+```bash
+#!/bin/bash
+# claude-with-memory.sh — wraps claude CLI with auto-save
+OUTPUT=$(mktemp)
+claude "$@" 2>&1 | tee "$OUTPUT"
+
+# Retain the session transcript
+curl -s -X POST http://localhost:8080/v1/retain \
+  -H "Authorization: Bearer $CLEARMEMORY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"content\": $(cat "$OUTPUT" | jq -Rs .),
+    \"tags\": {\"repo\": \"$(basename $(pwd))\"}
+  }" > /dev/null
+
+rm "$OUTPUT"
+```
+
+---
+
 ## Import Formats
 
 | Format | Flag | Source |
@@ -136,15 +293,42 @@ clearmemory convert excel-to-clear data.xlsx
 
 ---
 
-## Enterprise Security
+## Feature Maturity
 
-Clear Memory is built for enterprise environments where AI conversation data is sensitive by default.
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Verbatim storage + structured fact extraction | Available | Full write path with encryption |
+| 4-strategy parallel retrieval (semantic, keyword, temporal, entity graph) | Available | 93.3% Recall@10 measured at scale |
+| Reciprocal Rank Fusion merge | Available | k=60, configurable |
+| CLI (all commands) | Available | `clearmemory init/recall/retain/import/...` |
+| MCP server (9 tools) | Available | JSON-RPC 2.0 over stdio |
+| HTTP REST API | Available | axum, all 9 operations |
+| 7 import format parsers | Available | Claude Code, Copilot, ChatGPT, Slack, Markdown, Clear Format, auto-detect |
+| SQLCipher encryption at rest | Available | AES-256-CBC (SQLite), AES-256-GCM (files) |
+| API token authentication + scopes | Available | read, read-write, admin, purge |
+| Rate limiting | Available | Per-client, configurable per operation type |
+| Secret scanning (regex-based) | Available | 9 pattern categories, warn/redact/block modes |
+| Tamper-evident audit log | Available | Chained SHA-256 hashes, external checkpoints |
+| Data classification (manual) | Available | 4 levels, classification pipeline tracing |
+| Retention policies (time, size, performance) | Available | Archive, not delete |
+| Backup / restore | Available | Encrypted `.cmb` snapshots |
+| BGE-Reranker-Base cross-encoder | In Development | Implemented, not yet wired into default pipeline |
+| PII pattern detection | Planned | Regex-based, auto-classify as `pii` |
+| Entropy-based secret detection | Planned | Shannon entropy for high-entropy strings |
+| Curator model (Qwen3-0.6B) | Planned | candle integration for Tier 2 |
+| Reflect / synthesis (Qwen3-4B) | Planned | candle integration for Tier 2 |
+| LLM-based entity resolution | Planned | Tier 2+ enhanced alias linking |
+| LLM-based content classification | Planned | v2, topic-sensitivity classification |
+
+## Enterprise Roadmap
+
+The following enterprise features are designed and documented. Implementation status varies — see the maturity table above for details.
 
 **Encrypted at rest.** SQLite via SQLCipher (AES-256-CBC). Verbatim files and vectors via AES-256-GCM. Backups encrypted. A stolen device yields encrypted blobs, not readable transcripts.
 
 **Authenticated access.** API tokens with scoped permissions (read, read-write, admin, purge). Tokens expire after configurable TTL (default 90 days). Rate limiting on all endpoints.
 
-**Secret scanning.** Detects API keys, tokens, passwords, and connection strings before storage. Modes: warn, redact, or block.
+**Secret scanning.** Detects API keys, tokens, passwords, and connection strings before storage. Modes: warn, redact, or block. Current detection is regex-based — see [security.md](docs/security.md) for limitations and hardening roadmap.
 
 **Classification-aware.** Four-level data classification (public, internal, confidential, pii). PII and confidential data never leaves the machine, even in Tier 3.
 
@@ -154,7 +338,7 @@ Clear Memory is built for enterprise environments where AI conversation data is 
 
 **Incident response playbooks.** Documented procedures for: device theft, unauthorized access, model poisoning, credential exposure, and audit log breach.
 
-See `security.md` for full details.
+See [security.md](docs/security.md) for full details and [ENTERPRISE.md](docs/ENTERPRISE.md) for the enterprise adoption guide.
 
 ---
 
@@ -253,6 +437,26 @@ clearmemory audit verify                      # verify audit chain
 
 ---
 
+## Try It Out
+
+The [examples/](examples/) directory contains 5 runnable examples that walk you through Clear Memory's capabilities:
+
+| Example | Interface | What You'll Learn |
+|---------|-----------|-------------------|
+| [01-getting-started](examples/01-getting-started/) | CLI | Core retain/recall/expand loop, tags, status |
+| [02-importing-history](examples/02-importing-history/) | CLI | Import from Claude Code, CSV, Slack — unified search |
+| [03-claude-code-sessions](examples/03-claude-code-sessions/) | CLI | Capture Claude sessions, scan for secrets, backup |
+| [04-http-api](examples/04-http-api/) | HTTP/curl | Full REST API surface with request/response examples |
+| [05-mcp-integration](examples/05-mcp-integration/) | MCP | JSON-RPC protocol — how AI tools talk to Clear Memory |
+
+Each example includes sample data, a runnable script, and a detailed README. Run them in order for the full experience, or jump to whichever interface you care about.
+
+```bash
+cd examples/01-getting-started && ./run.sh
+```
+
+---
+
 ## System Requirements
 
 | | Tier 1 | Tier 2 |
@@ -265,17 +469,27 @@ clearmemory audit verify                      # verify audit chain
 
 ---
 
+## Benchmarks
+
+Retrieval quality is measured, not claimed. See **[docs/benchmarks.md](docs/benchmarks.md)** for full methodology, results, and reproduction commands.
+
+| Benchmark | Corpus | Score | Notes |
+|-----------|--------|-------|-------|
+| **Official LongMemEval** (ICLR 2025) | 500 questions, same dataset as competitors | **52.8% R_any@10** (keyword-only) | Directly comparable to published results |
+| Custom scale test | 500–10,000 memories, 30 queries | **93.3% R@10** | Stable across all corpus sizes |
+| Custom LongMemEval-style | 128 memories, 80 queries | **76.8% R@10** | Self-authored corpus, not comparable to official |
+
+Full pipeline results (with embeddings) will be significantly higher. See [benchmarks.md](docs/benchmarks.md) for complete methodology, per-question results, and reproduction commands.
+
 ## Documentation
 
 | Document | Contents |
 |----------|----------|
-| `CLAUDE.md` | Full project constitution — architecture, schema, conventions, everything |
-| `architecture.md` | System architecture diagrams and data flow |
-| `security.md` | Complete security model, threat mitigations, compliance |
-| `ENTERPRISE.md` | Enterprise value proposition, adoption guide, ROI framework |
-| `docs/runbook.md` | Operations procedures: backup, restore, migration, troubleshooting |
-| `docs/integration_guide.md` | MCP and HTTP integration for consuming applications |
-| `docs/clear_format_spec.md` | Clear Format (.clear) file specification |
+| **[docs/benchmarks.md](docs/benchmarks.md)** | **Retrieval quality benchmarks — methodology, measured results, reproduction commands** |
+| [CLAUDE.md](CLAUDE.md) | Full project constitution — architecture, schema, conventions, everything |
+| [docs/architecture.md](docs/architecture.md) | System architecture diagrams and data flow |
+| [docs/security.md](docs/security.md) | Complete security model, threat mitigations, compliance |
+| [docs/ENTERPRISE.md](docs/ENTERPRISE.md) | Enterprise value proposition, adoption guide |
 
 ---
 
@@ -284,7 +498,7 @@ clearmemory audit verify                      # verify audit chain
 - **Rust** — single binary, no runtime dependencies
 - **SQLite + SQLCipher** — encrypted structured storage
 - **LanceDB** — embedded vector search
-- **BGE-M3** — dense + sparse embeddings (via fastembed-rs)
+- **BGE-Small-EN / BGE-M3** — dense + sparse embeddings (via fastembed-rs)
 - **BGE-Reranker-Base** — cross-encoder reranking
 - **Qwen3-0.6B / Qwen3-4B** — local LLM inference (via candle)
 - **OpenTelemetry** — observability and metrics
@@ -293,13 +507,13 @@ clearmemory audit verify                      # verify audit chain
 
 ## Contributing
 
-See `CONTRIBUTING.md` for guidelines. All contributions require signing off on the Developer Certificate of Origin (DCO).
+Contributions welcome. Please open an issue to discuss significant changes before submitting a PR.
 
 ---
 
 ## License
 
-[License TBD — see CLAUDE.md for licensing strategy considerations]
+Apache 2.0 — see [LICENSE](LICENSE) for details.
 
 ---
 

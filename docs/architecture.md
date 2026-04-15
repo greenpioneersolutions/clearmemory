@@ -193,6 +193,13 @@ Query: "why did we switch to GraphQL?"
     │    Reorder candidates by relevance score
     │    This catches semantically-similar but non-answering results
     │
+    ├──▶ Structured Fact Query (parallel with vector search)
+    │    Query SQLite facts table for matching subject/predicate/object
+    │    Apply temporal validity: only facts where valid_until IS NULL
+    │    For knowledge-update queries ("what is our current X?"),
+    │      fact results take priority over older semantic matches
+    │    Facts link back to source memory_id for provenance
+    │
     ├──▶ Classification Check
     │    If Tier 3 (cloud): verify no PII/confidential in results
     │    If blocked, exclude from pipeline or fall back to local
@@ -366,6 +373,37 @@ retain("We decided to use Clerk for auth", tags={team: platform, project: q1-mig
                     └─────────────────────┘
 ```
 
+### Hybrid Storage: Verbatim + Structured Facts
+
+Clear Memory uses a hybrid approach to storage — every transcript is stored verbatim (unmodified, encrypted) alongside structured facts extracted at ingestion time.
+
+```
+Incoming memory: "We decided to migrate from Auth0 to Clerk for auth"
+    │
+    ├──▶ Verbatim storage (encrypted file, full fidelity)
+    │    The original text is never summarized or replaced.
+    │    Available via clearmemory_expand for full context.
+    │
+    └──▶ Fact extraction (SQLite facts table)
+         subject: "auth provider"
+         predicate: "migrated_to"
+         object: "Clerk"
+         valid_from: 2026-03-15
+         valid_until: NULL (current)
+         memory_id: <link back to source>
+
+         Previous fact automatically invalidated:
+         subject: "auth provider"
+         predicate: "is"
+         object: "Auth0"
+         valid_until: 2026-03-15 (superseded)
+```
+
+This dual representation enables:
+- **Audibility:** The verbatim transcript preserves exact words for compliance, legal hold, and full-context retrieval.
+- **Queryability:** Structured facts power knowledge-update queries ("what is our current auth provider?") and temporal queries ("what was our auth provider in January?") without re-reading every transcript.
+- **Conflict detection:** When a new fact contradicts an existing one (same subject + predicate, different object), the old fact is invalidated with a `valid_until` timestamp — not deleted.
+
 ### Concurrency Model
 
 ```
@@ -411,7 +449,7 @@ retain("We decided to use Clerk for auth", tags={team: platform, project: q1-mig
 │                                 ▼                                │
 │                    Context Compiler (token budget)                │
 │                                                                  │
-│  Zero external calls. ~96% accuracy. ~1.2GB RAM.                 │
+│  Zero external calls. 76.8-93.3% measured (see benchmarks.md).   │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
@@ -435,7 +473,7 @@ retain("We decided to use Clerk for auth", tags={team: platform, project: q1-mig
 │  │  linking              │                                         │
 │  └──────────────────────┘                                         │
 │                                                                  │
-│  Zero external calls. ~99% accuracy. ~2.4-4.9GB RAM.             │
+│  Zero external calls. ~99% target (not yet measured). ~2.4-4.9GB │
 └──────────────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────────────┐
@@ -457,7 +495,7 @@ retain("We decided to use Clerk for auth", tags={team: platform, project: q1-mig
 │  │  └─────────────────────────────────┘                  │        │
 │  └───────────────────────────────────────────────────────┘        │
 │                                                                  │
-│  Cloud calls for enhanced quality. 99%+ accuracy.                │
+│  Cloud calls for enhanced quality. 99%+ target (not measured).   │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -507,6 +545,29 @@ retain("We decided to use Clerk for auth", tags={team: platform, project: q1-mig
     also checks Stream B and C for potentially relevant results
     from adjacent tag intersections.
 ```
+
+### Related Stream Detection
+
+When searching within a stream, Clear Memory automatically identifies and searches adjacent streams that share tags with the active stream.
+
+```
+Active stream: "Platform Auth"
+  Tags: team:platform + domain:security/auth
+
+Step 1: Find streams sharing ≥1 tag with active stream
+Step 2: Rank by tag overlap count
+Step 3: Search top-N related streams (default: 3)
+
+  Related: "Q1 Migration" (shares team:platform)
+  Related: "All Security" (shares domain:security/*)
+  Related: "Auth Service" (shares domain:security/auth)
+  NOT related: "Frontend UI" (zero tag overlap)
+
+Step 4: Related results enter the same merge/rerank pipeline
+        but receive a slight score penalty vs primary stream results
+```
+
+Nested domain tags match hierarchically: `domain:security/auth` matches streams tagged `domain:security/*` (parent) and `domain:security/auth/oauth` (child). This ensures security-scoped searches catch results from both broader and narrower domain scopes.
 
 ---
 
