@@ -400,6 +400,55 @@ cargo test --test per_strategy_bench -- --nocapture
 cargo test --test per_strategy_bench -- --nocapture --ignored  # includes semantic
 ```
 
+### Semantic Purity (zero keyword overlap)
+
+```bash
+# Keyword-only (should score ~0% — proves queries have no keyword leakage)
+cargo test --test benchmark_semantic_purity test_semantic_purity_keyword_only -- --nocapture
+
+# Full pipeline (measures genuine semantic understanding)
+cargo test --release --test benchmark_semantic_purity test_semantic_purity_full_pipeline -- --nocapture --ignored
+
+# With BGE-Reranker-Base cross-encoder (measures reranker impact)
+cargo test --release --test benchmark_semantic_purity test_semantic_purity_with_reranker -- --nocapture --ignored
+```
+
+### Benchmark Rigor Tests
+
+```bash
+# Knowledge update: current fact must rank above superseded
+cargo test --release --test benchmark_rigor test_knowledge_update_ranking -- --nocapture --ignored
+
+# Genuine multi-hop: queries requiring 2-3 memory chains
+cargo test --release --test benchmark_rigor test_genuine_multihop -- --nocapture --ignored
+
+# Distractor corpus: 1000 irrelevant + 15 target memories
+cargo test --release --test benchmark_rigor test_distractor_corpus -- --nocapture --ignored
+```
+
+### LoCoMo
+
+```bash
+# Download dataset (one-time)
+curl -L -o tests/fixtures/locomo10.json \
+  https://raw.githubusercontent.com/snap-research/locomo/main/data/locomo10.json
+
+# Run
+cargo test --release --test benchmark_locomo -- --nocapture --ignored
+```
+
+### Multi-Axis (quality + latency + efficiency)
+
+```bash
+cargo test --release --test benchmark_multiaxis -- --nocapture --ignored
+```
+
+### LLM-as-Judge (requires API key)
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... cargo test --release --test benchmark_llm_judge -- --nocapture --ignored
+```
+
 ### Latency Benchmarks (Criterion)
 
 ```bash
@@ -413,6 +462,11 @@ cargo bench
 | File | Purpose |
 |------|---------|
 | `tests/benchmark_longmemeval_official.rs` | **Official LongMemEval** (500 questions, ICLR 2025 dataset) — directly comparable to published results |
+| `tests/benchmark_locomo.rs` | **Official LoCoMo** (217 QA pairs, 5 categories) — second standard dataset |
+| `tests/benchmark_semantic_purity.rs` | **Semantic purity**: 55 queries with zero keyword overlap — proves semantic understanding |
+| `tests/benchmark_rigor.rs` | **Rigor tests**: knowledge update ranking, genuine multi-hop (2-3 chains), distractor corpus (1000 irrelevant + 15 target) |
+| `tests/benchmark_multiaxis.rs` | **Multi-axis**: quality + latency (p50/p95/p99) + token efficiency scored together |
+| `tests/benchmark_llm_judge.rs` | **LLM-as-judge**: end-to-end answer quality evaluation via Anthropic/OpenAI API |
 | `tests/benchmark_longmemeval.rs` | Custom LongMemEval-style: 128-mem (80 queries) + 500-mem (120 queries), 5 task types |
 | `tests/benchmark_suite.rs` | Publication suite: 500 memories, 100 queries, 8 categories incl. adversarial |
 | `tests/benchmark_scale.rs` | Corpus scale: 30 queries tested at 500, 1K, 2K, 3K, 4K, 5K, 10K memories |
@@ -437,6 +491,34 @@ To add a query to the LongMemEval benchmark:
 | Keyword Recall@10 ≥ 0.50 | Fails test if below | Every CI run |
 | Full Pipeline Recall@10 ≥ 0.70 | Fails test if below | Release gate |
 | Regression suite Recall@10 ≥ 0.90 | Fails test if below | Every CI run |
+
+---
+
+## Benchmark Rigor
+
+These tests address specific credibility gaps identified in our QA audit:
+
+### Semantic Purity (55 queries, zero keyword overlap)
+
+Every query is phrased using synonyms and circumlocutions that share **zero content keywords** with the expected memory. The benchmark verifies this at runtime. If keyword-only recall is >0% on these queries, the test itself is flawed.
+
+This proves the retrieval pipeline relies on genuine semantic understanding, not keyword matching.
+
+### Knowledge Update Ranking (6 cases)
+
+Tests that when a fact has been superseded (e.g., Auth0 → Clerk), the CURRENT fact ranks above the old one — not just "both are retrieved." Each case has a superseded and current memory; the system must rank current first.
+
+### Genuine Multi-hop (7 queries, 2-3 hop chains)
+
+Queries that require chaining information across 2-3 memories. Example: "Who was responsible for the service that caused the October outage?" requires: Person → Bug → Outage (3-hop). Not topic aggregation — actual entity chain reasoning.
+
+### Distractor Corpus (1000 irrelevant + 15 target)
+
+Mix 1000 completely irrelevant memories (office memos, cafeteria updates, parking notices) with 15 engineering target memories. Tests whether precision collapses under noise — a corpus-size-independent measure of retrieval quality.
+
+### Multi-Axis Scoring
+
+Measures quality (Recall@10, MRR), latency (p50/p95/p99), and token efficiency (injected tokens vs full corpus) as independent axes. Follows the approach of Hindsight's Agent Memory Benchmark.
 
 ---
 
