@@ -168,7 +168,11 @@ impl LanceStorage {
             .vector_search(query_vec)
             .map_err(|e| StorageError::VectorStorage(format!("search setup failed: {e}")))?;
 
-        let mut vector_query = vector_query.limit(top_k);
+        // Use cosine distance — BGE models are trained with cosine similarity objective.
+        // Cosine distance range: [0, 2] where 0 = identical vectors.
+        let mut vector_query = vector_query
+            .distance_type(lancedb::DistanceType::Cosine)
+            .limit(top_k);
 
         if let Some(sid) = stream_id {
             vector_query = vector_query.only_if(format!("stream_id = '{sid}'"));
@@ -204,8 +208,8 @@ impl LanceStorage {
                     }
                     let memory_id = ids.value(i).to_string();
                     let distance = distances.value(i) as f64;
-                    // Convert distance to similarity score (1 / (1 + distance))
-                    let score = 1.0 / (1.0 + distance);
+                    // Cosine distance [0, 2] → similarity [0, 1]
+                    let score = 1.0 - (distance / 2.0);
                     search_results.push(VectorSearchResult { memory_id, score });
                 }
             }

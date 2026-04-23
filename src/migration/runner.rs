@@ -66,6 +66,7 @@ fn apply_migration(conn: &Connection, from_version: i64, to_version: i64) -> Res
 fn get_migration_sql(version: i64) -> Result<String, String> {
     match version {
         1 => Ok(include_str!("../../migrations/001_initial_schema.sql").to_string()),
+        2 => Ok(include_str!("../../migrations/002_fts5_index.sql").to_string()),
         _ => Err(format!("unknown migration version: {version}")),
     }
 }

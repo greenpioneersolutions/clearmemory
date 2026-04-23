@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 
 /// The current schema version expected by this binary.
-pub const CURRENT_VERSION: i64 = 1;
+pub const CURRENT_VERSION: i64 = 2;
 
 /// Get the current schema version from the database.
 /// Returns 0 if the schema_version table doesn't exist yet.

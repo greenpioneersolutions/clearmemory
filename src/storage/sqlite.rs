@@ -344,6 +344,14 @@ fn do_retain(conn: &Connection, params: RetainParams) -> Result<String, StorageE
         ],
     )?;
 
+    // Sync FTS5 index for keyword search (ignore errors if table doesn't exist yet)
+    if let Some(summary) = &params.summary {
+        let _ = conn.execute(
+            "INSERT INTO memories_fts (memory_id, summary) VALUES (?1, ?2)",
+            params![id, summary],
+        );
+    }
+
     // Insert tags
     for (tag_type, tag_value) in &params.tags {
         conn.execute(

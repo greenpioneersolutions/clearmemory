@@ -256,7 +256,7 @@ Clear Memory ships as the memory layer for ClearPathAI (Slice 31). Integration s
 |---|---|---|---|---|---|
 | **Local-only mode** | Yes (Tier 1) | No | No | Optional | Yes |
 | **Encryption at rest** | Yes (v1) | Enterprise only | SOC 2 | No | No |
-| **Benchmark (LongMemEval)** | 76.8% measured ([benchmarks](benchmarks.md)) | 49% | 63.8% | Unpublished | 91.4% |
+| **Benchmark (LongMemEval)** | 74.6% measured, official dataset ([benchmarks](benchmarks.md)) | 49% | 63.8% | Unpublished | 91.4% |
 | **Language** | Rust | Python | Python | Python | Python/Go |
 | **Runtime dependencies** | None | Python + vector DB | Python + Neo4j | Python + server | Docker + Postgres |
 | **Secret scanning** | Built-in | No | No | No | No |

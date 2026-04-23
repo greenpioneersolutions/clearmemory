@@ -25,19 +25,73 @@ pub struct MergedResult {
     pub contributing_strategies: Vec<Strategy>,
 }
 
-/// Merge results from multiple strategies using Reciprocal Rank Fusion.
+/// Per-strategy weight multipliers for weighted RRF.
+/// Higher weight = more influence on final ranking.
+#[derive(Debug, Clone)]
+pub struct StrategyWeights {
+    pub semantic: f64,
+    pub keyword: f64,
+    pub temporal: f64,
+    pub entity_graph: f64,
+}
+
+impl Default for StrategyWeights {
+    fn default() -> Self {
+        Self {
+            semantic: 1.5,    // semantic search is the primary signal
+            keyword: 1.0,     // keyword matching is reliable for exact terms
+            temporal: 0.8,    // temporal is supplementary
+            entity_graph: 0.8, // entity graph is supplementary
+        }
+    }
+}
+
+impl StrategyWeights {
+    /// Equal weights (original RRF behavior).
+    pub fn equal() -> Self {
+        Self {
+            semantic: 1.0,
+            keyword: 1.0,
+            temporal: 1.0,
+            entity_graph: 1.0,
+        }
+    }
+
+    fn weight_for(&self, strategy: &Strategy) -> f64 {
+        match strategy {
+            Strategy::Semantic => self.semantic,
+            Strategy::Keyword => self.keyword,
+            Strategy::Temporal => self.temporal,
+            Strategy::EntityGraph => self.entity_graph,
+        }
+    }
+}
+
+/// Merge results from multiple strategies using Weighted Reciprocal Rank Fusion.
 ///
-/// RRF formula: score(d) = sum over strategies of 1 / (k + rank_in_strategy(d))
-/// where k = 60 is the standard constant.
+/// Weighted RRF formula: score(d) = sum over strategies of w_i / (k + rank_i(d))
+/// where k = 60 is the standard constant and w_i is the per-strategy weight.
+///
+/// With equal weights (all 1.0), this reduces to standard RRF.
 pub fn reciprocal_rank_fusion(
     strategy_results: Vec<Vec<ScoredResult>>,
     k: f64,
+) -> Vec<MergedResult> {
+    weighted_reciprocal_rank_fusion(strategy_results, k, &StrategyWeights::equal())
+}
+
+/// Weighted RRF with configurable per-strategy weights.
+pub fn weighted_reciprocal_rank_fusion(
+    strategy_results: Vec<Vec<ScoredResult>>,
+    k: f64,
+    weights: &StrategyWeights,
 ) -> Vec<MergedResult> {
     let mut scores: HashMap<String, (f64, Vec<Strategy>)> = HashMap::new();
 
     for results in &strategy_results {
         for (rank, result) in results.iter().enumerate() {
-            let rrf_score = 1.0 / (k + rank as f64 + 1.0);
+            let weight = weights.weight_for(&result.strategy);
+            let rrf_score = weight / (k + rank as f64 + 1.0);
             let entry = scores
                 .entry(result.memory_id.clone())
                 .or_insert((0.0, Vec::new()));

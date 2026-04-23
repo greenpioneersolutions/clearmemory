@@ -475,7 +475,7 @@ Retrieval quality is measured, not claimed. See **[docs/benchmarks.md](docs/benc
 
 | Benchmark | Corpus | Score | Notes |
 |-----------|--------|-------|-------|
-| **Official LongMemEval** (ICLR 2025) | 500 questions, same dataset as competitors | **52.8% R_any@10** (keyword-only) | Directly comparable to published results |
+| **Official LongMemEval** (ICLR 2025) | 500 questions, same dataset as competitors | **74.6% R_any@10** | Directly comparable to published results |
 | Custom scale test | 500–10,000 memories, 30 queries | **93.3% R@10** | Stable across all corpus sizes |
 | Custom LongMemEval-style | 128 memories, 80 queries | **76.8% R@10** | Self-authored corpus, not comparable to official |
 
